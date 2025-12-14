@@ -2,7 +2,7 @@
 
 This is my Neovim config. There are many like it, but this one is mine 🫡
 
-![](/cat.webp)
+![](cat.webp)
 
 ### Directories
 
