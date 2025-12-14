@@ -3,7 +3,7 @@ local u = require 'utils'
 u.options {
   termguicolors = true,
   laststatus = 3,
-  clipboard = 'unnamed',
+  clipboard = 'unnamedplus',
   ignorecase = true,
   smartcase = true,
   showcmd = true,
