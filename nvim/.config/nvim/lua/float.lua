@@ -35,11 +35,11 @@ M.create = function(fn, title)
     width = width,
     row = math.floor((vim.o.lines - height) / 2),
     col = math.floor((vim.o.columns - width) / 2),
-    border = vim.g.winborder,
+    border = vim.g._settings_winborder,
     title = title,
     title_pos = 'center',
   })
-  vim.api.nvim_set_option_value('winblend', vim.g.winblend, { win = win })
+  vim.api.nvim_set_option_value('winblend', vim.g._settings_winblend, { win = win })
 
   local function close()
     vim.api.nvim_win_close(win, true)

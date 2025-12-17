@@ -41,7 +41,7 @@ local plugins = {
 ---@type LazyConfig
 local lazy_opts = {
   ui = {
-    border = vim.g.winborder,
+    border = vim.g._settings_winborder,
     title = ' Plugins ',
     backdrop = 100
   },
@@ -50,7 +50,7 @@ local lazy_opts = {
   },
   install = {
     missing = true,
-    colorscheme = { vim.g.active_colorscheme },
+    colorscheme = { vim.g._settings_active_colorscheme },
   },
   change_detection = {
     notify = false,

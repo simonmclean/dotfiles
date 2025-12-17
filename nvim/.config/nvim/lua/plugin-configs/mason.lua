@@ -11,8 +11,8 @@ return {
   ---@type MasonSettings
   opts = {
     ui = {
-      border = vim.g.winborder,
-      winblend = vim.g.winblend,
+      border = vim.g._settings_winborder,
+      winblend = vim.g._settings_winblend,
       backdrop = 100
     },
   },

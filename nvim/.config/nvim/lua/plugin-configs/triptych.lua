@@ -9,7 +9,7 @@ return {
   opts = {
     options = {
       backdrop = 100,
-      transparency = vim.g.winblend,
+      transparency = vim.g._settings_winblend,
     },
     extension_mappings = {
       ['<leader>sg'] = {

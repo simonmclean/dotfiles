@@ -30,7 +30,7 @@ u.options {
   wrap = false,
   switchbuf = 'usetab,uselast',
   startofline = true,
-  winborder = vim.g.winborder,
+  winborder = vim.g._settings_winborder,
 }
 
 vim.opt_global.shortmess:append 's'

@@ -4,7 +4,7 @@ return {
   opts = {
     delay = 1000,
     win = {
-      border = vim.g.winborder,
+      border = vim.g._settings_winborder,
     },
   },
 }

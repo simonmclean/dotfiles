@@ -34,7 +34,7 @@ return {
   opts = {
     preview_window = {
       auto_preview = true,
-      winblend = vim.g.winblend,
+      winblend = vim.g._settings_winblend,
     },
     outline_window = {
       -- These 2 options blend cursor with cursorline
