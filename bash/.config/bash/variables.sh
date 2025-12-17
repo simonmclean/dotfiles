@@ -1,1 +1,3 @@
-export EDITOR="nvim"
+if command -v nvim &> /dev/null; then
+  export EDITOR="nvim"
+fi
