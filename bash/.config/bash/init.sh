@@ -11,4 +11,5 @@ if command -v fzf &> /dev/null; then
   fi
 fi
 
+source "$HOME/.config/bash/variables.sh"
 source "$HOME/.config/bash/aliases.sh"
