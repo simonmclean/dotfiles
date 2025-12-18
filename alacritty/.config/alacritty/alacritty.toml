@@ -1,0 +1,10 @@
+[font]
+normal = { family = "Hack Nerd Font" }
+size = 14.0
+
+[window]
+decorations = "Transparent"
+opacity = 0.95
+
+[colors]
+transparent_background_colors = true
