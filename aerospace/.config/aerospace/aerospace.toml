@@ -82,7 +82,7 @@ on-mode-changed = []
     outer.left =       8
     outer.bottom =     8
     # outer.top values assume the laptop display will be the main monitor
-    outer.top =        [{ monitor.main = 14 }, { monitor."some-pattern" = 45 }, 45]
+    outer.top =        [{ monitor.main = 10 }, { monitor.secondary = 45 }, 45]
     outer.right =      8
 
 # 'main' binding mode declaration

@@ -21,12 +21,12 @@ ITEM_DIR="$CONFIG_DIR/items"
 sketchybar --add event aerospace_workspace_change
 sketchybar --add event aerospace_monitor_change
 
-sketchybar --bar height=37        \
+sketchybar --bar height=33        \
                  blur_radius=30   \
                  position=top     \
                  sticky=off       \
-                 padding_left=10  \
-                 padding_right=10 \
+                 padding_left=5  \
+                 padding_right=5 \
                  color=$BAR_COLOR
 
 ##### Changing Defaults #####
@@ -41,8 +41,8 @@ sketchybar --default icon.font="$SYSTEM_FONT"  \
                      background.color=$ITEM_BG_COLOR       \
                      background.corner_radius=5            \
                      background.height=24                  \
-                     padding_left=5                        \
-                     padding_right=5                       \
+                     padding_left=3                        \
+                     padding_right=3                       \
                      label.padding_left=4                  \
                      label.padding_right=10                \
                      icon.padding_left=10                  \

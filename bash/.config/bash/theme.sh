@@ -11,5 +11,5 @@ export SYSTEM_ACCENT_COLOR=$CATPPUCCIN_MOCHA_GREEN
 
 # FONTS
 MACOS="SF Pro:Semibold:15.0"
-JETBRAINS="JetBrainsMono Nerd Font Mono:Regular:14.0"
+JETBRAINS="JetBrainsMono Nerd Font Mono:Regular:13.0"
 export SYSTEM_FONT=$JETBRAINS

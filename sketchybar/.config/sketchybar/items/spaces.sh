@@ -6,7 +6,7 @@ for sid in $(aerospace list-workspaces --all); do
                --set space.$sid \
                      icon=$sid                                  \
                      label.font="sketchybar-app-font:Regular:16.0" \
-                     label.padding_right=20                     \
+                     label.padding_right=15                     \
                      label.y_offset=-1                          \
                      click_script="aerospace workspace $sid" \
                      script="$PLUGIN_DIR/space.sh $sid"
