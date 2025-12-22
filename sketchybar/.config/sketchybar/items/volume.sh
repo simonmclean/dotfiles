@@ -2,4 +2,5 @@
 
 sketchybar --add item volume right \
            --set volume script="$PLUGIN_DIR/volume.sh" \
-           --subscribe volume volume_change 
+                 click_script="open 'x-apple.systempreferences:com.apple.Sound'" \
+           --subscribe volume volume_change
