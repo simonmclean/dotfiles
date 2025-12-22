@@ -2,7 +2,7 @@
 
 while read -r workspace; do
   apps="$(aerospace list-windows --workspace "$workspace" --json | jq -r '.[] | .["app-name"]')"
-  
+
   icon_strip=" "
   if [ "${apps}" != "" ]; then
     while read -r app

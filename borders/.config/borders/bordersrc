@@ -1,0 +1,11 @@
+#!/bin/bash
+
+source "$HOME/.config/bash/theme.sh"
+
+options=(
+  width=5.0
+	active_color=$WHITE
+	inactive_color=$SYSTEM_BG_COLOR
+)
+
+borders "${options[@]}"

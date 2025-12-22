@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source "$CONFIG_DIR/colors.sh" # Loads all defined colors
+source "$HOME/.config/bash/theme.sh"
+source "$CONFIG_DIR/colors.sh"
 
 # This is a demo config to show some of the most important commands more easily.
 # This is meant to be changed and configured, as it is intentionally kept sparse.
@@ -33,9 +34,9 @@ sketchybar --bar height=37        \
 # For a full list of all available item properties see:
 # https://felixkratz.github.io/SketchyBar/config/items
 
-sketchybar --default icon.font="SF Pro:Semibold:15.0"  \
+sketchybar --default icon.font="$SYSTEM_FONT"  \
                      icon.color=$WHITE                 \
-                     label.font="SF Pro:Semibold:15.0" \
+                     label.font="$SYSTEM_FONT" \
                      label.color=$WHITE                \
                      background.color=$ITEM_BG_COLOR       \
                      background.corner_radius=5            \
