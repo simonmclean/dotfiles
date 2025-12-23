@@ -5,8 +5,9 @@ source $HOME/.config/bash/theme.sh
 export WHITE=0xffffffff
 
 export BAR_COLOR=$SYSTEM_BG_COLOR
-export ITEM_BG_COLOR=$SYSTEM_SURFACE_COLOR
+export ITEM_BG_COLOR=$SYSTEM_BG_COLOR
 export ACCENT_COLOR=$SYSTEM_ACCENT_COLOR
+export ACCENT_COLOR_TRANSPARENT=$(transparency $SYSTEM_ACCENT_COLOR 0.6)
 
 # -- Teal Scheme --
 # export BAR_COLOR=0xff001f30
