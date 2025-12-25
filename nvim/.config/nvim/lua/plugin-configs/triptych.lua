@@ -10,6 +10,7 @@ return {
     options = {
       backdrop = 100,
       transparency = vim.g._settings_winblend,
+      show_hidden = true,
     },
     extension_mappings = {
       ['<leader>sg'] = {

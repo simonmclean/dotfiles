@@ -19,6 +19,14 @@ return {
     gitbrowse = {},
     picker = {
       enabled = true,
+      sources = {
+        files = {
+          hidden = true,
+        },
+        grep = {
+          hidden = true,
+        },
+      },
       layouts = {
         default = {
           layout = {
