@@ -92,7 +92,7 @@ on-mode-changed = []
     inner.vertical =   10
     outer.top =        [{ monitor.'built-in' = 12 }, 43]
     outer.right =      8
-    outer.bottom =     8
+    outer.bottom =     10
     outer.left =       8
 
 # 'main' binding mode declaration
