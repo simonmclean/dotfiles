@@ -6,8 +6,8 @@ u.keys {
   { '-', ':split<cr>', 'split horizontal' },
 
   -- TabAdd commentMore actions
-  { '<C-l>', 'gt', 'tab right' },
-  { '<C-h>', 'gT', 'tab left' },
+  { 'L', 'gt', 'tab right' },
+  { 'H', 'gT', 'tab left' },
 
   -- Scroll
   { '<C-k>', '5<C-y>', 'scroll up' },
@@ -36,13 +36,11 @@ u.keys {
 
   { '<C-/>', ':nohlsearch<CR>', 'Clear search highlight' },
 
-  { '<leader>T', '<cmd>GotoTest<CR>', 'Go to test' },
-
   -- When pasting over a visual selection, send the replaced text into the black hole register
   { 'p', '"_dp', 'paste ahead', modes = 'x' },
   { 'P', '"_dP', 'paste before', modes = 'x' },
 
-  -- Makes cursor navigation more intuitive in wrapped text
+  -- Makes cursor navigation more intuitively in wrapped text
   { 'j', 'gj', 'cursor down' },
   { 'k', 'gk', 'cursor down' },
 
