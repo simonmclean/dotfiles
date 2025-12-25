@@ -5,7 +5,7 @@ u.keys {
   { '|', ':vertical split<cr>', 'split vertical' },
   { '-', ':split<cr>', 'split horizontal' },
 
-  -- TabAdd commentMore actions
+  -- Tab right and left
   { 'L', 'gt', 'tab right' },
   { 'H', 'gT', 'tab left' },
 
