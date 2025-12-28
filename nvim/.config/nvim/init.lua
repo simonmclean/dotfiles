@@ -17,7 +17,7 @@ system_deps.ensure_installed {
 vim.g.mapleader = ' '
 
 -- user settings
-vim.g._settings_winblend = 10
+vim.g._settings_winblend = 100
 vim.g._settings_winborder = 'rounded'
 vim.g._settings_transparent_background = true
 vim.g._settings_active_colorscheme = u.eval(function()
