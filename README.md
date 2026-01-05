@@ -4,7 +4,14 @@ Unified dotfiles managed by [GNU Stow](https://www.gnu.org/software/stow/).
 
 ![](cat.gif)
 
-## Usage
+## MacOS settings for Aerospace & Sketchybar
+
+- Extenal monitor is set as main display
+- Menu bar is positioned on the external display
+- Dock and menu bar are auto hidden
+- Menu has solid background
+
+## Using stow
 
 Create a package like `<package-name>/<location-relative-to-home>` e.g. `nvim/.config/nvim` or `zsh/.zshrc`.
 
