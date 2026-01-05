@@ -3,7 +3,7 @@
 source "$HOME/.config/bash/theme.sh"
 
 options=(
-  width=2.0
+  width=3.0
   hidpi=on
 	active_color=$WHITE
 	inactive_color=$SYSTEM_BG_COLOR
