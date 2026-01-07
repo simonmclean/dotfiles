@@ -2,7 +2,8 @@
 
 source $HOME/.config/bash/theme.sh
 
-COUNT=$(brew outdated --quiet 2>/dev/null | wc -l | tr -d ' ')
+# Read count from cache file updated by cron
+COUNT=$(cat /tmp/brew-outdated-count.txt 2>/dev/null || echo 0)
 
 if [[ $COUNT -eq 0 ]]; then
   COLOUR=$SYSTEM_HEALTH_STATUS_4
