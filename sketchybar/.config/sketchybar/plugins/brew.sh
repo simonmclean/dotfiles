@@ -20,8 +20,6 @@ if [[ $COUNT -eq -1 ]]; then
 else
   LABEL=$COUNT
 fi
-echo "count $COUNT"
-echo "label $LABEL"
 
 sketchybar --set $NAME \
   icon.color=$COLOUR \
