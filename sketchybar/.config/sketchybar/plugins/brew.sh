@@ -3,7 +3,7 @@
 source $HOME/.config/bash/theme.sh
 
 # Read count from cache file updated by cron
-COUNT=$(cat /tmp/brew-outdated-count.txt 2>/dev/null || echo 0)
+COUNT=$(cat /tmp/brew-outdated-count.txt 2>/dev/null || echo -1)
 
 if [[ $COUNT -eq 0 ]]; then
   COLOUR=$SYSTEM_HEALTH_STATUS_4
@@ -15,7 +15,15 @@ else
   COLOUR=$SYSTEM_HEALTH_STATUS_1
 fi
 
+if [[ $COUNT -eq -1 ]]; then
+  LABEL="?"
+else
+  LABEL=$COUNT
+fi
+echo "count $COUNT"
+echo "label $LABEL"
+
 sketchybar --set $NAME \
   icon.color=$COLOUR \
-  label="$COUNT" \
+  label="$LABEL" \
   label.color=$COLOUR
