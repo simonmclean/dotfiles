@@ -6,5 +6,9 @@
 # https://felixkratz.github.io/SketchyBar/config/events#events-and-scripting
 
 if [ "$SENDER" = "front_app_switched" ]; then
-  sketchybar --set $NAME label="$INFO" icon="$($CONFIG_DIR/plugins/icon_map_fn.sh "$INFO")"
+  front_app=(
+    label="$INFO"
+    icon="$($CONFIG_DIR/plugins/icon_map_fn.sh "$INFO")"
+  )
+  sketchybar --set $NAME "${front_app[@]}"
 fi
