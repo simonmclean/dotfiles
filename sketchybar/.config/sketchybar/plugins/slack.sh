@@ -27,8 +27,11 @@ else
   exit 0
 fi
 
-sketchybar --set $NAME \
-  drawing=on \
-  icon=$ICON \
-  icon.color=$ICON_COLOUR \
+slack=(
+  drawing=on
+  icon=$ICON
+  icon.color=$ICON_COLOUR
   label="$LABEL"
+)
+
+sketchybar --set $NAME "${slack[@]}"

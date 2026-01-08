@@ -23,6 +23,9 @@ else
   LABEL=$COUNT
 fi
 
-sketchybar --set $NAME \
-  icon.color=$ICON_COLOUR \
+brew=(
+  icon.color=$ICON_COLOUR
   label="$LABEL"
+)
+
+sketchybar --set $NAME "${brew[@]}"

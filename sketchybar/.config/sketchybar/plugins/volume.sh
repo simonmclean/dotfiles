@@ -26,8 +26,11 @@ if [ "$SENDER" = "volume_change" ]; then
       ICON_COLOR=$SYSTEM_VOLUME_1
   esac
 
-  sketchybar --set $NAME \
-    icon="$ICON" \
-    icon.color="$ICON_COLOR" \
+  volume=(
+    icon="$ICON"
+    icon.color="$ICON_COLOR"
     label="$VOLUME%"
+  )
+
+  sketchybar --set $NAME "${volume[@]}"
 fi

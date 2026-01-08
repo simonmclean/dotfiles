@@ -18,35 +18,43 @@ ITEM_DIR="$CONFIG_DIR/items"
 # If you are looking for other colors, see the color picker:
 # https://felixkratz.github.io/SketchyBar/config/tricks#color-picker
 
-sketchybar --add event aerospace_workspace_change
-sketchybar --add event aerospace_monitor_change
+sketchybar --add event aerospace_workspace_change \
+           --add event aerospace_monitor_change
 
-sketchybar --bar height=33        \
-                 blur_radius=30   \
-                 position=top     \
-                 sticky=off       \
-                 padding_left=5  \
-                 padding_right=5 \
-                 color=$BAR_COLOR
+bar=(
+  height=33
+  blur_radius=30
+  position=top
+  sticky=off
+  padding_left=5
+  padding_right=5
+  color=$BAR_COLOR
+)
+
+sketchybar --bar "${bar[@]}"
 
 ##### Changing Defaults #####
 # We now change some default values that are applied to all further items
 # For a full list of all available item properties see:
 # https://felixkratz.github.io/SketchyBar/config/items
 
-sketchybar --default icon.font="$SYSTEM_FONT:SemiBold:13.0"  \
-                     icon.color=$SYSTEM_TEXT_COLOR \
-                     label.font="$SYSTEM_FONT:SemiBold:13.0" \
-                     label.color=$SYSTEM_TEXT_COLOR \
-                     background.color=$ITEM_BG_COLOR       \
-                     background.corner_radius=4            \
-                     background.height=22                  \
-                     padding_left=3                        \
-                     padding_right=3                       \
-                     label.padding_left=4                  \
-                     label.padding_right=8                \
-                     icon.padding_left=8                  \
-                     icon.padding_right=4
+defaults=(
+  icon.font="$SYSTEM_FONT:SemiBold:13.0"
+  icon.color=$SYSTEM_TEXT_COLOR
+  label.font="$SYSTEM_FONT:SemiBold:13.0"
+  label.color=$SYSTEM_TEXT_COLOR
+  background.color=$ITEM_BG_COLOR
+  background.corner_radius=4
+  background.height=22
+  padding_left=3
+  padding_right=3
+  label.padding_left=4
+  label.padding_right=8
+  icon.padding_left=8
+  icon.padding_right=4
+)
+
+sketchybar --default "${defaults[@]}"
 
 # -- Left Side Items --
 source $ITEM_DIR/spaces.sh
