@@ -8,21 +8,27 @@ if ! pgrep -x "Slack" > /dev/null; then
   exit 0
 fi
 
-sketchybar --set $NAME drawing=on
+STATUS_LABEL=$(lsappinfo info -only StatusLabel "Slack")
+ICON="󰒱"
 
-# Get badge count from Slack app in Dock
-COUNT=$(defaults read com.tinyspeck.slackmacgap BadgeCount 2>/dev/null || echo 0)
+if [[ $STATUS_LABEL =~ \"label\"=\"([^\"]*)\" ]]; then
+    LABEL="${BASH_REMATCH[1]}"
 
-if [[ $COUNT -eq 0 ]]; then
-  COLOUR=$SYSTEM_HEALTH_STATUS_4
-  LABEL=""
+    if [[ $LABEL == "" ]]; then
+        ICON_COLOUR=$SYSTEM_HEALTH_STATUS_4
+    elif [[ $LABEL == "•" ]]; then
+        ICON_COLOUR=$SYSTEM_HEALTH_STATUS_3
+    elif [[ $LABEL =~ ^[0-9]+$ ]]; then
+        ICON_COLOUR=$SYSTEM_HEALTH_STATUS_2
+    else
+        exit 0
+    fi
 else
-  COLOUR=$SYSTEM_HEALTH_STATUS_2
-  LABEL="$COUNT"
+  exit 0
 fi
 
 sketchybar --set $NAME \
-  icon= \
-  icon.color=$COLOUR \
-  label="$LABEL" \
-  label.color=$COLOUR
+  drawing=on \
+  icon=$ICON \
+  icon.color=$ICON_COLOUR \
+  label="$LABEL"
