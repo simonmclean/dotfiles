@@ -10,7 +10,7 @@ if [ "$1" = "$FOCUSED_WORKSPACE" ]; then
                          background.color=$ACCENT_COLOR \
                          label.color=$BAR_COLOR \
                          icon.color=$BAR_COLOR
-elif echo "$FOCUSED_MONITOR_WORKSPACES" | grep -q "$1"; then
+elif [[ "$FOCUSED_MONITOR_WORKSPACES" == *"$1"* ]]; then
   # workspaces in the focused monitor
   sketchybar --set $NAME background.drawing=on \
                          background.color=$BAR_COLOR \
