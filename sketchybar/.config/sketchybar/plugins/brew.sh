@@ -6,22 +6,23 @@ source $HOME/.config/bash/theme.sh
 COUNT=$(cat /tmp/brew-outdated-count.txt 2>/dev/null || echo -1)
 
 if [[ $COUNT -eq 0 ]]; then
-  COLOUR=$SYSTEM_HEALTH_STATUS_4
+  ICON_COLOUR=$SYSTEM_HEALTH_STATUS_4
 elif [[ $COUNT -lt 4 ]]; then
-  COLOUR=$SYSTEM_HEALTH_STATUS_3
+  ICON_COLOUR=$SYSTEM_HEALTH_STATUS_3
 elif [[ $COUNT -lt 8 ]]; then
-  COLOUR=$SYSTEM_HEALTH_STATUS_2
+  ICON_COLOUR=$SYSTEM_HEALTH_STATUS_2
 else
-  COLOUR=$SYSTEM_HEALTH_STATUS_1
+  ICON_COLOUR=$SYSTEM_HEALTH_STATUS_1
 fi
 
 if [[ $COUNT -eq -1 ]]; then
   LABEL="?"
+elif [[ $COUNT -eq 0 ]]; then
+  LABEL=""
 else
   LABEL=$COUNT
 fi
 
 sketchybar --set $NAME \
-  icon.color=$COLOUR \
-  label="$LABEL" \
-  label.color=$COLOUR
+  icon.color=$ICON_COLOUR \
+  label="$LABEL"
