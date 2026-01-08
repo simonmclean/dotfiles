@@ -3,7 +3,7 @@
 brew=(
   update_freq=3600
   script="$PLUGIN_DIR/brew.sh"
-  icon=
+  icon=
   click_script="$PLUGIN_DIR/brew.sh"
 )
 
