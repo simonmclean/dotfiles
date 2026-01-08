@@ -2,6 +2,7 @@
 
 slack=(
   update_freq=60
+  updates=when_shown
   script="$PLUGIN_DIR/slack.sh"
   click_script="open -a Slack"
 )

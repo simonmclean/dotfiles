@@ -8,6 +8,7 @@ media=(
   icon=􀑪
   icon.color=$ACCENT_COLOR
   background.drawing=off
+  updates=when_shown
   script="$PLUGIN_DIR/media.sh"
 )
 
