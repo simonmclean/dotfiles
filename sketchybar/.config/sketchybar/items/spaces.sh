@@ -8,7 +8,7 @@ add_space ()
     display=$2 \
     icon=$1                                  \
     icon.padding_left=6 \
-    label.font="sketchybar-app-font:Regular:16.0" \
+    label.font="sketchybar-app-font:Regular:14.0" \
     label.padding_right=10                     \
     label.padding_left=0                     \
     label.y_offset=-1                          \
