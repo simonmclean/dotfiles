@@ -1,32 +1,42 @@
 #!/bin/bash
 
-add_space ()
-{
-  local space=(
-    display=$2
-    icon=$1
-    icon.padding_left=6
-    label.font="sketchybar-app-font:Regular:14.0"
-    label.padding_right=10
-    label.padding_left=0
-    label.y_offset=-1
-    click_script="aerospace workspace $1"
-    script="$PLUGIN_DIR/space.sh $1"
-  )
 
-  sketchybar --add item space.$1 left \
-             --subscribe space.$1 aerospace_workspace_change \
-             --set space.$1 "${space[@]}"
-}
+SPACE_COMMANDS=()
 
 for sid in $(aerospace list-workspaces --monitor 1); do
-  add_space $sid 1
+  SPACE_COMMANDS+=(
+    --add item space.$sid left
+    --subscribe space.$sid aerospace_workspace_change
+    --set space.$sid
+      display=1
+      icon=$sid
+      icon.padding_left=6
+      label.font="sketchybar-app-font:Regular:14.0"
+      label.padding_right=10
+      label.padding_left=0
+      label.y_offset=-1
+      click_script="aerospace workspace $sid"
+      script="$PLUGIN_DIR/space.sh $sid"
+  )
 done
 
-# Handle multi-monitor (assumes main is the external display)
+# Handle multi-monitor (assumes main is the external display)1
 if [ $(aerospace list-monitors --json | jq 'length') -gt 1 ]; then
   for sid in $(aerospace list-workspaces --monitor 2); do
-    add_space $sid 2
+    SPACE_COMMANDS+=(
+      --add item space.$sid left
+      --subscribe space.$sid aerospace_workspace_change
+      --set space.$sid
+        display=2
+        icon=$sid
+        icon.padding_left=6
+        label.font="sketchybar-app-font:Regular:14.0"
+        label.padding_right=10
+        label.padding_left=0
+        label.y_offset=-1
+        click_script="aerospace workspace $sid"
+        script="$PLUGIN_DIR/space.sh $sid"
+    )
   done
 fi
 
@@ -39,7 +49,9 @@ space_separator=(
   script="$PLUGIN_DIR/space_icons.sh"
 )
 
-sketchybar --add item space_separator left \
+
+sketchybar "${SPACE_COMMANDS[@]}" \
+           --add item space_separator left \
            --subscribe space_separator aerospace_workspace_change front_app_switched space_windows_change aerospace_monitor_change \
            --set space_separator "${space_separator[@]}"
 
