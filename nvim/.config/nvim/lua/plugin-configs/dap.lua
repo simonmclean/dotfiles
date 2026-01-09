@@ -51,9 +51,6 @@ return {
           },
           default_section = 'scopes',
         },
-        windows = {
-          height = 20,
-        },
       },
     },
   },
