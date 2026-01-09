@@ -49,7 +49,6 @@ space_separator=(
   script="$PLUGIN_DIR/space_icons.sh"
 )
 
-
 sketchybar "${SPACE_COMMANDS[@]}" \
            --add item space_separator left \
            --subscribe space_separator aerospace_workspace_change front_app_switched space_windows_change aerospace_monitor_change \
