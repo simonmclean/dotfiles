@@ -6,6 +6,7 @@ local copilot_claude_sonnet = {
 return {
   'olimorris/codecompanion.nvim',
   version = '^18.0.0',
+  event = 'VeryLazy',
   opts = {
     interactions = {
       chat = { adapter = copilot_claude_sonnet },
@@ -17,4 +18,7 @@ return {
     'nvim-lua/plenary.nvim',
     'nvim-treesitter/nvim-treesitter',
   },
+  init = function()
+    require('code-companion-fidget'):init()
+  end,
 }
