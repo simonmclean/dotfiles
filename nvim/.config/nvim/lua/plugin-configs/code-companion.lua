@@ -17,6 +17,7 @@ return {
   dependencies = {
     'nvim-lua/plenary.nvim',
     'nvim-treesitter/nvim-treesitter',
+    'j-hui/fidget.nvim',
   },
   init = function()
     require('code-companion-fidget'):init()
