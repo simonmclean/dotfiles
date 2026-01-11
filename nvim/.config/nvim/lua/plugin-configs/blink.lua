@@ -5,10 +5,10 @@ return {
   ---@module 'blink.cmp'
   ---@type blink.cmp.Config
   opts = {
-    enabled = function()
-      return vim.bo.filetype ~= 'copilot-chat'
-    end,
     sources = {
+      per_filetype = {
+        codecompanion = { 'codecompanion' },
+      },
       default = { 'lsp', 'copilot', 'path', 'snippets', 'buffer' },
       providers = {
         copilot = {
