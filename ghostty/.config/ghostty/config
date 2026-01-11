@@ -1,5 +1,5 @@
 theme = Catppuccin Mocha
-background-opacity = 0.85
+background-opacity = 0.6
 background-blur-radius = 10
 confirm-close-surface = false
 window-padding-x = 25
