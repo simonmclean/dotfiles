@@ -2,7 +2,7 @@
 
 # This is script is intended to be run as a cron
 # Add this to crontab -e
-# 0 * * * * [ -f $HOME/homebrew_count_outdated.sh ] && bash $HOME/homebrew_count_outdated.sh
+# 0/15 * * * * [ -f $HOME/homebrew_count_outdated.sh ] && bash $HOME/homebrew_count_outdated.sh
 
 # Check if homebrew is installed
 if [ ! -x /opt/homebrew/bin/brew ]; then
