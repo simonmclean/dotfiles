@@ -1,4 +1,5 @@
 local git_utils = require 'git.utils'
+local u = require 'utils'
 
 local create_cmd = vim.api.nvim_create_user_command
 
@@ -13,7 +14,7 @@ create_cmd('TabWidth', function()
   end)
 end, {})
 
-vim.api.nvim_create_user_command('Diff', function(opts)
+create_cmd('Diff', function(opts)
   vim.cmd.tabnew()
   vim.api.nvim_set_option_value('filetype', opts.args, { buf = 0 })
   vim.cmd.vnew()
@@ -24,3 +25,15 @@ end, {
   complete = 'filetype',
   desc = 'Diff <filetype> - open a tab with 2 splits of given filetype and start a diffthis',
 })
+
+create_cmd('Run', function()
+  local ft = vim.api.nvim_get_option_value('filetype', { buf = 0 })
+  local path = vim.fn.expand '%:p'
+
+  if ft == 'c' then
+    local command = '!gcc -Wall -Wextra ' .. path .. ' -o /tmp/runc && /tmp/runc'
+    vim.api.nvim_exec2(command, {})
+  else
+    u.warn('No run command for filetype: ' .. ft)
+  end
+end, {})
