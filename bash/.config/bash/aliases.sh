@@ -31,6 +31,7 @@ alias d='docker'
 alias k="kubectl"
 alias tf="terraform"
 alias n="nvim"
+alias p="pnpm"
 
 # Git
 alias g='git'
