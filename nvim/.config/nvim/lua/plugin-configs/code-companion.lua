@@ -1,6 +1,6 @@
 local copilot_claude_sonnet = {
   name = 'copilot',
-  model = 'claude-sonnet-4.5',
+  model = 'claude-sonnet-4.6',
 }
 
 return {
