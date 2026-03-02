@@ -22,4 +22,5 @@ fi
 
 source "$HOME/.config/bash/variables.sh"
 source "$HOME/.config/bash/aliases.sh"
+source "$HOME/.config/bash/functions.sh"
 source "$HOME/.config/bash/nvm.sh"
