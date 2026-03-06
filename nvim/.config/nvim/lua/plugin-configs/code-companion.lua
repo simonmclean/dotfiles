@@ -8,7 +8,12 @@ return {
   version = '^18.0.0',
   opts = {
     interactions = {
-      chat = { adapter = copilot_claude_sonnet },
+      chat = {
+        adapter = copilot_claude_sonnet,
+        keymaps = {
+          system_prompt = false,
+        },
+      },
       inline = { adapter = copilot_claude_sonnet },
       cmd = { adapter = copilot_claude_sonnet },
     },
