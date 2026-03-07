@@ -26,14 +26,17 @@ end, {
   desc = 'Diff <filetype> - open a tab with 2 splits of given filetype and start a diffthis',
 })
 
-create_cmd('Run', function()
+create_cmd('Run', function(args)
   local ft = vim.api.nvim_get_option_value('filetype', { buf = 0 })
   local path = vim.fn.expand '%:p'
 
   if ft == 'c' then
     local command = '!gcc -Wall -Wextra ' .. path .. ' -o /tmp/runc && /tmp/runc'
+    if (args.args) then
+      command = command .. ' ' .. args.args
+    end
     vim.api.nvim_exec2(command, {})
   else
     u.warn('No run command for filetype: ' .. ft)
   end
-end, {})
+end, { nargs = '*' })
