@@ -41,6 +41,8 @@ vim.diagnostic.config {
   },
 }
 
+require 'vim._core.ui2'.enable()
+
 require('git.status').setup()
 require 'plugins'
 require 'statusline.statusline'

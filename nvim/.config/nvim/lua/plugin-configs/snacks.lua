@@ -15,7 +15,7 @@ return {
     dashboard = { enabled = false },
     explorer = { enabled = false },
     indent = { enabled = true, animate = { enabled = false } },
-    input = { enabled = true },
+    input = { enabled = false },
     gitbrowse = {},
     picker = {
       enabled = true,
