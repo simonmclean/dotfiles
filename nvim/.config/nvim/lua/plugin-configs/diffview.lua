@@ -30,5 +30,17 @@ return {
         position = 'top',
       },
     },
+    keymaps = {
+      -- Unbind L to prevent clash with tab switching
+      view = {
+        { 'n', 'L', false },
+      },
+      file_panel = {
+        { 'n', 'L', false },
+      },
+      file_history_panel = {
+        { 'n', 'L', false },
+      },
+    },
   },
 }
