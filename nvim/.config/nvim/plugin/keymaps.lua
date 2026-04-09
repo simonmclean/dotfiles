@@ -10,8 +10,8 @@ u.keys {
   { 'H', 'gT', 'tab left' },
 
   -- Scroll
-  { '<C-k>', '5<C-y>', 'scroll up' },
-  { '<C-j>', '5<C-e>', 'scroll down' },
+  { 'K', '5<C-y>', 'scroll up' },
+  { 'J', '5<C-e>', 'scroll down' },
 
   -- Lazy exec mode
   -- These can't silent, otherwise the fancy pop-up command line won't appear
@@ -62,11 +62,10 @@ u.keys {
     'block previous',
   },
 
-  -- LSP rename
-  { '<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame' },
-
-  -- LSP code action
+  -- LSP
   { '<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction' },
+  { '<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame' },
+  { 'gk', vim.lsp.buf.hover, 'Show hover doc' },
 
   -- Replace motion e.g. <leader>pq performs "paste in quotes"
   {
