@@ -1,0 +1,45 @@
+-- diffview.nvim: advanced git diff UI
+
+---@diagnostic disable: missing-fields
+
+-- Close diffview before exiting, otherwise it makes a mess when the session is restored
+vim.api.nvim_create_autocmd('VimLeavePre', {
+  callback = function()
+    local diffview_installed, _ = pcall(require, 'diffview')
+    if diffview_installed then
+      local views = require('diffview.lib').views
+      if #views > 0 then
+        for _, view in ipairs(views) do
+          view:close()
+        end
+      end
+    end
+  end,
+})
+
+vim.pack.add {
+  'https://github.com/sindrets/diffview.nvim',
+}
+
+---@module 'diffview'
+---@type DiffviewConfig
+require('diffview').setup {
+  enhanced_diff_hl = true,
+  file_panel = {
+    win_config = {
+      position = 'top',
+    },
+  },
+  keymaps = {
+    -- Unbind L to prevent clash with tab switching
+    view = {
+      { 'n', 'L', false },
+    },
+    file_panel = {
+      { 'n', 'L', false },
+    },
+    file_history_panel = {
+      { 'n', 'L', false },
+    },
+  },
+}

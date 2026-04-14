@@ -1,62 +1,60 @@
--- Bootstrap lazy.nvim
-local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
-if not (vim.uv or vim.loop).fs_stat(lazypath) then
-  local lazyrepo = 'https://github.com/folke/lazy.nvim.git'
-  local out = vim.fn.system { 'git', 'clone', '--filter=blob:none', '--branch=main', lazyrepo, lazypath }
-  if vim.v.shell_error ~= 0 then
-    vim.api.nvim_echo({
-      { 'Failed to clone lazy.nvim:\n', 'ErrorMsg' },
-      { out, 'WarningMsg' },
-      { '\nPress any key to exit...' },
-    }, true, {})
-    vim.fn.getchar()
-    return
-  end
-end
-vim.opt.rtp:prepend(lazypath)
+-- Foundational / shared dependencies --
+require 'plugins.themes' -- colorschemes (available early for :colorscheme)
+require 'plugins.plenary' -- utility library used by many plugins
+require 'plugins.web-devicons' -- filetype icons used by many plugins
+require 'plugins.treesitter' -- syntax parsing; required by several plugins
+require 'plugins.fidget' -- progress notifications; required by code-companion
 
----Convenience function for lazy loading plugins with no config
----@param plugin string
----@param deps? string|string[]
----@return LazyPluginSpec
-local function very_lazy(plugin, deps)
-  return { plugin, dependencies = deps, event = 'VeryLazy' }
-end
+-- LSP --
+require 'plugins.lsp-config' -- LSP configurations
+require 'plugins.mason' -- LSP/tool installer
+require 'plugins.mason-lspconfig' -- bridges mason ↔ lspconfig (needs both above)
+require 'plugins.lazydev' -- LuaLS config for Neovim development
 
--- Plugins without configs are here.
--- Plugins with custom configs are imported from lua/plugin-configs/
-local plugins = {
-  -- Git integration
-  very_lazy 'tpope/vim-fugitive',
-  -- Makes more things dot repeatable
-  very_lazy 'tpope/vim-repeat',
-  -- Smart substitution that preserves casing
-  very_lazy 'tpope/vim-abolish',
-  -- JSDoc
-  very_lazy 'heavenshell/vim-jsdoc',
-  -- Vim sugar for common UNIX commands (Rename, Delete etc)
-  very_lazy 'tpope/vim-eunuch',
-}
+-- Completion --
+require 'plugins.copilot' -- GitHub Copilot (source for blink)
+require 'plugins.blink' -- completion engine (needs copilot + friendly-snippets)
 
----@type LazyConfig
-local lazy_opts = {
-  ui = {
-    border = vim.g._settings_winborder,
-    title = ' Plugins ',
-    backdrop = 100
-  },
-  dev = {
-    path = '~/code',
-  },
-  install = {
-    missing = true,
-    colorscheme = { vim.g._settings_active_colorscheme },
-  },
-  change_detection = {
-    notify = false,
-  },
-}
+-- AI / code assistance --
+require 'plugins.code-companion' -- AI chat/inline (needs plenary, treesitter, fidget)
 
-vim.keymap.set('n', '<leader>l', ':Lazy<CR>', { desc = 'Lazy', silent = true })
+-- Formatting & linting --
+require 'plugins.conform' -- formatter
+require 'plugins.lint' -- linter
+require 'plugins.eslint' -- ESLint integration
 
-require('lazy').setup({ plugins, { import = 'plugin-configs' }, { import = 'themes' } }, lazy_opts)
+-- Debugging --
+require 'plugins.dap' -- DAP core + dap-view UI (needs mason)
+require 'plugins.dap-virtual-text' -- virtual text for DAP (needs dap)
+
+-- Git --
+require 'plugins.gitsigns' -- hunk management, signcolumn
+require 'plugins.diffview' -- advanced diff UI
+
+-- Navigation & UI --
+require 'plugins.snacks' -- picker, terminal, indent guides, words, etc.
+require 'plugins.flash' -- jump navigation
+require 'plugins.spider' -- smarter word motions
+require 'plugins.triptych' -- file explorer (needs plenary, web-devicons, snacks)
+require 'plugins.outline' -- LSP symbol outline
+require 'plugins.which-key' -- keybinding hints
+require 'plugins.yankbank' -- clipboard history
+
+-- Language-specific --
+require 'plugins.treesitter-context' -- sticky context (needs treesitter)
+require 'plugins.ts-autotag' -- auto close/rename HTML/JSX tags (needs treesitter)
+require 'plugins.metals' -- Scala LSP (needs plenary)
+require 'plugins.neotest' -- test runner (needs nvim-nio, plenary, treesitter)
+
+-- Markdown --
+require 'plugins.render-markdown' -- rich markdown rendering (needs treesitter, web-devicons)
+
+-- Appearance & session --
+require 'plugins.themery' -- theme selector + persistence (needs colorschemes above)
+require 'plugins.pretty-vanilla-tabline' -- tabline (needs web-devicons)
+require 'plugins.lsp-file-operations' -- LSP rename/move support (needs plenary)
+require 'plugins.persistence' -- session management
+
+-- Misc --
+require 'plugins.mini' -- mini.ai, mini.splitjoin, mini.pairs, mini.surround
+require 'plugins.misc' -- fugitive, vim-repeat, vim-abolish, vim-jsdoc, vim-eunuch

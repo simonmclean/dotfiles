@@ -32,7 +32,7 @@ create_cmd('Run', function(args)
 
   if ft == 'c' then
     local command = '!gcc -Wall -Wextra ' .. path .. ' -o /tmp/runc && /tmp/runc'
-    if (args.args) then
+    if args.args then
       command = command .. ' ' .. args.args
     end
     vim.api.nvim_exec2(command, {})
@@ -40,3 +40,7 @@ create_cmd('Run', function(args)
     u.warn('No run command for filetype: ' .. ft)
   end
 end, { nargs = '*' })
+
+create_cmd('Update', function()
+  vim.pack.update()
+end, {})
