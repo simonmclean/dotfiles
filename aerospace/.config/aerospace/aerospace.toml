@@ -90,6 +90,7 @@ on-mode-changed = []
 [gaps]
     inner.horizontal = 10
     inner.vertical =   10
+    # outer.top =        [{ monitor.'built-in' = 43 }, 43]
     outer.top =        [{ monitor.'built-in' = 12 }, 43]
     outer.right =      8
     outer.bottom =     10
