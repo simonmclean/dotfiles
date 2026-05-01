@@ -29,6 +29,7 @@ alias ....='cd ../../..'
 # Tools
 alias d='docker'
 alias k="kubectl"
+alias kx="kubectx"
 alias tf="terraform"
 alias n="nvim"
 alias p="pnpm"
