@@ -3,7 +3,7 @@
 source $HOME/.config/bash/theme.sh
 
 # Read count from cache file updated by cron
-COUNT=$(cat /tmp/brew-outdated-count.txt 2>/dev/null || echo -1)
+COUNT=$(cat "$HOME/.cache/brew-outdated-count.txt" 2>/dev/null || echo -1)
 
 if [[ $COUNT -eq 0 ]]; then
   ICON_COLOUR=$SYSTEM_HEALTH_STATUS_4

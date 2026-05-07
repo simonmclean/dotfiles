@@ -4,10 +4,12 @@
 # Add this to crontab -e
 # 0/15 * * * * [ -f $HOME/homebrew_count_outdated.sh ] && bash $HOME/homebrew_count_outdated.sh
 
+mkdir -p "$HOME/.cache"
+
 # Check if homebrew is installed
 if [ ! -x /opt/homebrew/bin/brew ]; then
-    echo 0 > /tmp/brew-outdated-count.txt
+    echo 0 > "$HOME/.cache/brew-outdated-count.txt"
     exit 0
 fi
 
-/opt/homebrew/bin/brew outdated --json 2>/dev/null | jq '(.formulae | length) + (.casks | length)' > /tmp/brew-outdated-count.txt
+/opt/homebrew/bin/brew outdated --json 2>/dev/null | jq '(.formulae | length) + (.casks | length)' > "$HOME/.cache/brew-outdated-count.txt"
