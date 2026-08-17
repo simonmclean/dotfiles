@@ -2,6 +2,11 @@
 
 source "$HOME/.config/bash/theme.sh"
 source "$CONFIG_DIR/colors.sh"
+source "$CONFIG_DIR/monitors.sh"
+
+# Tells plugins/monitor_watch.sh not to reload while this load is in progress.
+touch "$CONFIG_LOADING_FILE"
+trap 'rm -f "$CONFIG_LOADING_FILE"' EXIT
 
 # This is a demo config to show some of the most important commands more easily.
 # This is meant to be changed and configured, as it is intentionally kept sparse.
@@ -18,8 +23,7 @@ ITEM_DIR="$CONFIG_DIR/items"
 # If you are looking for other colors, see the color picker:
 # https://felixkratz.github.io/SketchyBar/config/tricks#color-picker
 
-sketchybar --add event aerospace_workspace_change \
-           --add event aerospace_monitor_change
+sketchybar --add event aerospace_workspace_change
 
 bar=(
   height=33

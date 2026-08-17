@@ -3,6 +3,11 @@
 
 SPACE_COMMANDS=()
 
+# Record what this config is being built for, so monitor_watch.sh can tell
+# whether the bar still matches the monitors that are actually connected.
+MONITOR_COUNT=$(monitor_count)
+echo "$MONITOR_COUNT" > "$MONITOR_COUNT_FILE"
+
 for sid in $(aerospace list-workspaces --monitor 1); do
   SPACE_COMMANDS+=(
     --add item space.$sid left
@@ -20,8 +25,8 @@ for sid in $(aerospace list-workspaces --monitor 1); do
   )
 done
 
-# Handle multi-monitor (assumes main is the external display)1
-if [ $(aerospace list-monitors --json | jq 'length') -gt 1 ]; then
+# Handle multi-monitor (assumes main is the external display)
+if [ "$MONITOR_COUNT" -gt 1 ]; then
   for sid in $(aerospace list-workspaces --monitor 2); do
     SPACE_COMMANDS+=(
       --add item space.$sid left
@@ -49,9 +54,20 @@ space_separator=(
   script="$PLUGIN_DIR/space_icons.sh"
 )
 
+# Invisible item whose only job is to reload the bar when the set of connected
+# monitors changes, since the workspace items above cannot be rebuilt in place.
+monitor_watch=(
+  drawing=off
+  updates=on
+  script="$PLUGIN_DIR/monitor_watch.sh"
+)
+
 sketchybar "${SPACE_COMMANDS[@]}" \
            --add item space_separator left \
-           --subscribe space_separator aerospace_workspace_change front_app_switched space_windows_change aerospace_monitor_change \
-           --set space_separator "${space_separator[@]}"
+           --subscribe space_separator aerospace_workspace_change front_app_switched space_windows_change display_change \
+           --set space_separator "${space_separator[@]}" \
+           --add item monitor_watch left \
+           --subscribe monitor_watch display_change system_woke \
+           --set monitor_watch "${monitor_watch[@]}"
 
 $PLUGIN_DIR/space_icons.sh
