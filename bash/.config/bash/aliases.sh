@@ -33,6 +33,7 @@ alias kx="kubectx"
 alias tf="terraform"
 alias n="nvim"
 alias p="pnpm"
+alias p3="python3"
 
 # Git
 alias g='git'
