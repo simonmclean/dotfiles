@@ -1,0 +1,42 @@
+{
+  "outputStyle": "Concise",
+  "permissions": {
+    "ask": [
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/confirm-git-commit-push.mjs"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Read|Write|Edit|MultiEdit|NotebookEdit|Glob|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/confirm-outside-project.mjs"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/session-git-state.mjs",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
+  }
+}
