@@ -5,10 +5,10 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { formatReport, getGitState } from '../session-git-state.mjs';
-import { NODE_BINARIES, runHook } from './helpers.mjs';
+import { type GitState, formatReport, getGitState } from '../src/session-git-state.ts';
+import { runHook } from './helpers.ts';
 
-const HOOK = 'session-git-state.mjs';
+const HOOK = 'session-git-state.ts';
 
 // Isolate git from the user's own config so tests behave the same everywhere.
 Object.assign(process.env, {
@@ -20,11 +20,18 @@ Object.assign(process.env, {
   GIT_COMMITTER_EMAIL: 'test@example.com',
 });
 
-const git = (cwd, ...args) => execFileSync('git', args, { cwd, stdio: 'ignore' });
-const commit = (cwd, message) => git(cwd, 'commit', '--allow-empty', '-m', message);
+const git = (cwd: string, ...args: string[]) => execFileSync('git', args, { cwd, stdio: 'ignore' });
+const commit = (cwd: string, message: string) => git(cwd, 'commit', '--allow-empty', '-m', message);
+
+// getGitState for a folder the test knows is a repo.
+function stateOf(repo: string): GitState {
+  const state = getGitState(repo);
+  assert.ok(state, `${repo} should be a git repo`);
+  return state;
+}
 
 describe('formatReport', () => {
-  const cleanState = { branch: 'main', fetchFailed: false, comparison: null, changes: [] };
+  const cleanState: GitState = { branch: 'main', fetchFailed: false, comparison: null, changes: [] };
 
   test('reports branch and a clean tree', () => {
     assert.equal(
@@ -70,12 +77,12 @@ describe('formatReport', () => {
 });
 
 describe('getGitState', () => {
-  let tmp;
+  let tmp: string;
   before(() => (tmp = mkdtempSync(join(tmpdir(), 'session-git-state-'))));
   after(() => rmSync(tmp, { recursive: true, force: true }));
 
   // A bare "origin", a "seed" clone that pushes to it, and a "work" clone under test.
-  function setUpClonedRepo(name) {
+  function setUpClonedRepo(name: string) {
     const origin = join(tmp, `${name}-origin.git`);
     const seed = join(tmp, `${name}-seed`);
     const work = join(tmp, `${name}-work`);
@@ -88,7 +95,7 @@ describe('getGitState', () => {
     return { seed, work };
   }
 
-  function setUpLocalRepo(name) {
+  function setUpLocalRepo(name: string) {
     const repo = join(tmp, name);
     git(tmp, 'init', '-q', '-b', 'main', repo);
     commit(repo, 'one');
@@ -117,7 +124,7 @@ describe('getGitState', () => {
     commit(seed, 'three');
     git(seed, 'push', '-q', 'origin', 'main');
 
-    assert.deepEqual(getGitState(work).comparison, { base: 'origin/main', behind: 2, ahead: 0 });
+    assert.deepEqual(stateOf(work).comparison, { base: 'origin/main', behind: 2, ahead: 0 });
   });
 
   test('feature branch with local commits and uncommitted files', () => {
@@ -126,7 +133,7 @@ describe('getGitState', () => {
     commit(work, 'local');
     writeFileSync(join(work, 'new.txt'), 'x');
 
-    const state = getGitState(work);
+    const state = stateOf(work);
     assert.equal(state.branch, 'feature');
     assert.deepEqual(state.comparison, { base: 'origin/main', behind: 0, ahead: 1 });
     assert.deepEqual(state.changes, ['?? new.txt']);
@@ -140,36 +147,34 @@ describe('getGitState', () => {
   test('unreachable remote: flags the failed fetch', () => {
     const repo = setUpLocalRepo('broken-remote');
     git(repo, 'remote', 'add', 'origin', join(tmp, 'does-not-exist.git'));
-    assert.equal(getGitState(repo).fetchFailed, true);
+    assert.equal(stateOf(repo).fetchFailed, true);
   });
 
   test('detached HEAD: branch is null', () => {
     const repo = setUpLocalRepo('detached');
     git(repo, 'checkout', '-q', '--detach');
-    assert.equal(getGitState(repo).branch, null);
+    assert.equal(stateOf(repo).branch, null);
   });
 
   test('a failing remote-branch comparison is left out, not shown as up to date', () => {
     const { work } = setUpClonedRepo('unborn');
     git(work, 'checkout', '-q', '--orphan', 'empty'); // HEAD has no commits, so rev-list fails
-    assert.equal(getGitState(work).comparison, null);
+    assert.equal(stateOf(work).comparison, null);
   });
 
-  for (const node of NODE_BINARIES) {
-    describe(`as a script (${node})`, () => {
-      test('prints the report for the cwd it is given', () => {
-        const repo = setUpLocalRepo(`script-${NODE_BINARIES.indexOf(node)}`);
-        const output = runHook(HOOK, { cwd: repo, source: 'startup' }, { node });
-        assert.match(output, /^Git state at session start:\n- Current branch: main\n- Working tree clean\n$/);
-      });
-
-      test('prints nothing outside a repo', () => {
-        assert.equal(runHook(HOOK, { cwd: tmpdir() }, { node }), '');
-      });
-
-      test('exits 0 on malformed input', () => {
-        runHook(HOOK, 'not json', { node }); // throws if the exit code is non-zero
-      });
+  describe('as a script', () => {
+    test('prints the report for the cwd it is given', () => {
+      const repo = setUpLocalRepo('script');
+      const output = runHook(HOOK, { cwd: repo, source: 'startup' });
+      assert.match(output, /^Git state at session start:\n- Current branch: main\n- Working tree clean\n$/);
     });
-  }
+
+    test('prints nothing outside a repo', () => {
+      assert.equal(runHook(HOOK, { cwd: tmpdir() }), '');
+    });
+
+    test('exits 0 on malformed input', () => {
+      runHook(HOOK, 'not json'); // throws if the exit code is non-zero
+    });
+  });
 });

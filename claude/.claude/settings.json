@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/hooks/confirm-commit-push-pr.mjs",
+            "command": "node ~/.claude/hooks/src/confirm-commit-push-pr.ts",
             "onFailure": "block"
           }
         ]
@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/hooks/confirm-outside-project.mjs"
+            "command": "node ~/.claude/hooks/src/confirm-outside-project.ts"
           }
         ]
       }
@@ -36,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/hooks/session-git-state.mjs",
+            "command": "node ~/.claude/hooks/src/session-git-state.ts",
             "timeout": 20
           }
         ]

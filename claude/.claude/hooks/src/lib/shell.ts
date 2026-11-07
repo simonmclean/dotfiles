@@ -10,6 +10,9 @@
 // to decide when to *ask*, so it leans towards finding too much rather than
 // too little.
 
+/** One command: the program followed by its arguments, with quotes removed. */
+export type Command = string[];
+
 // Characters that end one command and start the next.
 const COMMAND_SEPARATORS = [';', '&', '|', '(', ')', '\n', '`'];
 
@@ -18,29 +21,28 @@ const REDIRECTIONS = ['<', '>'];
 
 const SHELLS = ['sh', 'bash', 'zsh'];
 
-const isWhitespace = (char) => char === ' ' || char === '\t';
+const isWhitespace = (char: string): boolean => char === ' ' || char === '\t';
 
-// Split a command line into commands, each a list of words with quotes removed.
+// Split a command line into commands.
 //
 //   parseCommands(`cd x && git commit -m 'a; b'`)
 //   -> [["cd", "x"], ["git", "commit", "-m", "a; b"]]
 //
 // The commands inside `sh -c '...'` are returned in place of the wrapper.
-export function parseCommands(commandLine) {
-  const commands = splitIntoWords(commandLine);
-  return commands.flatMap((words) => {
+export function parseCommands(commandLine: string): Command[] {
+  return splitIntoWords(commandLine).flatMap((words) => {
     const inner = innerShellCommand(words);
     return inner === null ? [words] : parseCommands(inner);
   });
 }
 
 // The last part of a path: "/usr/bin/git" -> "git".
-export function programName(word) {
+export function programName(word: string): string {
   return word.slice(word.lastIndexOf('/') + 1);
 }
 
 // For `bash -c 'git push'` (or -lc, -ic, ...) return "git push"; otherwise null.
-function innerShellCommand(words) {
+function innerShellCommand(words: Command): string | null {
   if (!SHELLS.includes(programName(words[0] ?? ''))) return null;
 
   const commandFlagIndex = words.findIndex((word, i) => i > 0 && /^-[a-z]*c[a-z]*$/.test(word));
@@ -50,12 +52,12 @@ function innerShellCommand(words) {
 }
 
 // The tokenizer: walks the command line one character at a time.
-function splitIntoWords(commandLine) {
-  const commands = [];
-  let words = [];
+function splitIntoWords(commandLine: string): Command[] {
+  const commands: Command[] = [];
+  let words: Command = [];
   let word = '';
   let inWord = false; // separate from `word !== ''` so that '' still counts as a word
-  let quote = null; // the quote character we're inside, if any
+  let quote: string | null = null; // the quote character we're inside, if any
 
   const endWord = () => {
     if (inWord) words.push(word);
@@ -69,7 +71,7 @@ function splitIntoWords(commandLine) {
   };
 
   for (let i = 0; i < commandLine.length; i++) {
-    const char = commandLine[i];
+    const char = commandLine.charAt(i);
 
     if (quote) {
       if (char === quote) quote = null;
@@ -78,9 +80,9 @@ function splitIntoWords(commandLine) {
       quote = char;
       inWord = true;
     } else if (char === '\\' && i + 1 < commandLine.length) {
-      word += commandLine[++i];
+      word += commandLine.charAt(++i);
       inWord = true;
-    } else if (char === '$' && commandLine[i + 1] === '(') {
+    } else if (char === '$' && commandLine.charAt(i + 1) === '(') {
       endCommand();
       i++; // skip the "("
     } else if (COMMAND_SEPARATORS.includes(char)) {

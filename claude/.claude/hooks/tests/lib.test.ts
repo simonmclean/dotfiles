@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-import { parseCommands, programName } from '../lib/shell.mjs';
+import { stringField } from '../src/lib/hook-io.ts';
+import { parseCommands, programName } from '../src/lib/shell.ts';
 
-const HOOK_IO = fileURLToPath(new URL('../lib/hook-io.mjs', import.meta.url));
+const HOOK_IO = fileURLToPath(new URL('../src/lib/hook-io.ts', import.meta.url));
 
 describe('parseCommands', () => {
   test('splits on separators', () => {
@@ -65,7 +66,7 @@ test('programName strips the folder', () => {
 });
 
 describe('hook-io', () => {
-  const runModule = (script, input) =>
+  const runModule = (script: string, input: string) =>
     execFileSync(process.execPath, ['--input-type=module', '-e', script], { input, encoding: 'utf8' });
 
   test('readHookInput parses JSON from stdin', () => {
@@ -78,6 +79,16 @@ describe('hook-io', () => {
     assert.equal(runModule(script, '').trim(), '{}');
     assert.equal(runModule(script, 'not json').trim(), '{}');
     assert.equal(runModule(script, 'null').trim(), '{}');
+  });
+
+  test('stringField returns strings and ignores everything else', () => {
+    const source = { command: 'ls', count: 3, list: ['a'], empty: '' };
+    assert.equal(stringField(source, 'command'), 'ls');
+    assert.equal(stringField(source, 'empty'), '');
+    assert.equal(stringField(source, 'count'), undefined);
+    assert.equal(stringField(source, 'list'), undefined);
+    assert.equal(stringField(source, 'missing'), undefined);
+    assert.equal(stringField(undefined, 'command'), undefined);
   });
 
   test('runIfMain does nothing when there is no script path (node -e)', () => {

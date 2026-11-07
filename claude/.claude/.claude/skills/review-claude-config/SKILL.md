@@ -10,7 +10,7 @@ Review the Claude Code config I maintain, using three reviewer agents in paralle
 
 ## The config
 
-The files I maintain are the ones in `~/.claude` that are symlinks into `~/stow/claude/.claude/` (see `ls -l ~/.claude`): `CLAUDE.md`, `settings.json`, `hooks/` and `.claude/`. Everything else in `~/.claude` (`projects/`, `sessions/`, `cache/`, ...) is managed by Claude Code and is out of scope.
+The files I maintain are the ones in `~/.claude` that are symlinks into `~/stow/claude/.claude/` (see `ls -l ~/.claude`): `CLAUDE.md`, `settings.json`, `hooks/` and `.claude/`. Everything else in `~/.claude` (`projects/`, `sessions/`, `cache/`, ...) is managed by Claude Code and is out of scope. So are `hooks/node_modules/` and `hooks/package-lock.json`, which npm manages.
 
 Use `~/.claude/...` paths throughout, so reads stay inside this project. Git works through the symlinks: run it as `git -C ~/.claude/hooks ...` and limit it to the package with the pathspec `:/claude` (relative to the repo root, `~/stow`).
 
@@ -36,7 +36,7 @@ For a change review, the reviewers still read surrounding files for context (a h
 ### 2. Gather shared context
 
 - The list of files in scope (as `~/.claude/...` paths), and the diff if there is one.
-- Test results: `cd ~/.claude/hooks && node --test 'tests/*.test.mjs'`. Include failures in full.
+- Test results: `cd ~/.claude/hooks && npm test`. Include failures in full.
 
 ### 3. Run the reviewers in parallel
 

@@ -1,12 +1,12 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { decide, guardedCommands } from '../confirm-commit-push-pr.mjs';
-import { NODE_BINARIES, runHook } from './helpers.mjs';
+import { decide, guardedCommands } from '../src/confirm-commit-push-pr.ts';
+import { runHook } from './helpers.ts';
 
-const HOOK = 'confirm-commit-push-pr.mjs';
+const HOOK = 'confirm-commit-push-pr.ts';
 
-const needsApproval = (commandLine) => guardedCommands(commandLine).length > 0;
+const needsApproval = (commandLine: string) => guardedCommands(commandLine).length > 0;
 
 test('asks for commands that commit or push', () => {
   const commands = [
@@ -82,6 +82,7 @@ test('guardedCommands names each guarded command once', () => {
 
 test('decide returns an "ask" decision naming the commands', () => {
   const decision = decide({ tool_name: 'Bash', tool_input: { command: 'git push && gh pr merge 3' } });
+  assert.ok(decision);
   assert.equal(decision.hookSpecificOutput.hookEventName, 'PreToolUse');
   assert.equal(decision.hookSpecificOutput.permissionDecision, 'ask');
   assert.equal(decision.hookSpecificOutput.permissionDecisionReason, 'Needs your approval (CLAUDE.md rule): git push, gh pr merge');
@@ -93,19 +94,17 @@ test('decide returns null for other commands and for missing input', () => {
   assert.equal(decide(undefined), null);
 });
 
-for (const node of NODE_BINARIES) {
-  describe(`as a script (${node})`, () => {
-    test('prints the decision JSON for commit/push', () => {
-      const output = runHook(HOOK, { tool_name: 'Bash', tool_input: { command: 'git commit -m x' } }, { node });
-      assert.equal(JSON.parse(output).hookSpecificOutput.permissionDecision, 'ask');
-    });
-
-    test('prints nothing for other commands', () => {
-      assert.equal(runHook(HOOK, { tool_name: 'Bash', tool_input: { command: 'ls' } }, { node }), '');
-    });
-
-    test('prints nothing, and exits 0, on malformed input', () => {
-      assert.equal(runHook(HOOK, 'not json', { node }), '');
-    });
+describe('as a script', () => {
+  test('prints the decision JSON for commit/push', () => {
+    const output = runHook(HOOK, { tool_name: 'Bash', tool_input: { command: 'git commit -m x' } });
+    assert.equal(JSON.parse(output).hookSpecificOutput.permissionDecision, 'ask');
   });
-}
+
+  test('prints nothing for other commands', () => {
+    assert.equal(runHook(HOOK, { tool_name: 'Bash', tool_input: { command: 'ls' } }), '');
+  });
+
+  test('prints nothing, and exits 0, on malformed input', () => {
+    assert.equal(runHook(HOOK, 'not json'), '');
+  });
+});

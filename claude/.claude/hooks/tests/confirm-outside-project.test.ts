@@ -4,12 +4,12 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { decide, findOutsidePaths, readAdditionalDirectories } from '../confirm-outside-project.mjs';
-import { NODE_BINARIES, runHook } from './helpers.mjs';
+import { type Context, decide, findOutsidePaths, readAdditionalDirectories } from '../src/confirm-outside-project.ts';
+import { runHook } from './helpers.ts';
 
-const HOOK = 'confirm-outside-project.mjs';
+const HOOK = 'confirm-outside-project.ts';
 
-const context = {
+const context: Context = {
   projectDir: '/Users/me/project',
   cwd: '/Users/me/project',
   home: '/Users/me',
@@ -18,9 +18,9 @@ const context = {
   additionalDirs: [],
 };
 
-const bash = (command, overrides = {}) =>
+const bash = (command: string, overrides: Partial<Context> = {}) =>
   findOutsidePaths({ tool_name: 'Bash', tool_input: { command } }, { ...context, ...overrides });
-const tool = (tool_name, tool_input, overrides = {}) =>
+const tool = (tool_name: string, tool_input: Record<string, unknown>, overrides: Partial<Context> = {}) =>
   findOutsidePaths({ tool_name, tool_input }, { ...context, ...overrides });
 
 describe('file tools', () => {
@@ -67,7 +67,7 @@ describe('Bash', () => {
     const commands = [
       'ls',
       'cat src/a.js',
-      "node --test 'tests/*.test.mjs'",
+      "node --test 'tests/*.test.ts'",
       'ls 2>/dev/null',
       'echo x > /dev/stderr',
       'echo x >/dev/stdout',
@@ -190,8 +190,8 @@ describe("Claude Code's own files", () => {
 });
 
 describe('readAdditionalDirectories', () => {
-  let home;
-  let project;
+  let home: string;
+  let project: string;
   before(() => {
     home = mkdtempSync(join(tmpdir(), 'outside-home-'));
     project = join(home, 'project');
@@ -216,6 +216,7 @@ describe('readAdditionalDirectories', () => {
 describe('decide', () => {
   test('asks, naming the project and the paths', () => {
     const decision = decide({ tool_name: 'Read', tool_input: { file_path: '/etc/hosts' } }, context);
+    assert.ok(decision);
     assert.equal(decision.hookSpecificOutput.permissionDecision, 'ask');
     assert.equal(decision.hookSpecificOutput.permissionDecisionReason, 'Outside the project (/Users/me/project): /etc/hosts');
   });
@@ -227,27 +228,30 @@ describe('decide', () => {
   });
 });
 
-for (const node of NODE_BINARIES) {
-  describe(`as a script (${node})`, () => {
-    const env = { CLAUDE_PROJECT_DIR: '/Users/me/project' };
+describe('as a script', () => {
+  const env = { CLAUDE_PROJECT_DIR: '/Users/me/project' };
 
-    test('uses CLAUDE_PROJECT_DIR as the project', () => {
-      const input = { tool_name: 'Read', tool_input: { file_path: '/Users/me/project/a' }, cwd: '/elsewhere' };
-      assert.equal(runHook(HOOK, input, { node, env }), '');
-    });
-
-    test('prints an "ask" decision for outside paths', () => {
-      const output = runHook(HOOK, { tool_name: 'Read', tool_input: { file_path: '/etc/hosts' } }, { node, env });
-      assert.equal(JSON.parse(output).hookSpecificOutput.permissionDecision, 'ask');
-    });
-
-    test('allows the scratchpad_dir from the input', () => {
-      const input = { tool_name: 'Write', tool_input: { file_path: '/var/pad/a' }, scratchpad_dir: '/var/pad' };
-      assert.equal(runHook(HOOK, input, { node, env }), '');
-    });
-
-    test('prints nothing, and exits 0, on malformed input', () => {
-      assert.equal(runHook(HOOK, 'not json', { node, env }), '');
-    });
+  test('uses CLAUDE_PROJECT_DIR as the project', () => {
+    const input = { tool_name: 'Read', tool_input: { file_path: '/Users/me/project/a' }, cwd: '/elsewhere' };
+    assert.equal(runHook(HOOK, input, { env }), '');
   });
-}
+
+  test('prints an "ask" decision for outside paths', () => {
+    const output = runHook(HOOK, { tool_name: 'Read', tool_input: { file_path: '/etc/hosts' } }, { env });
+    assert.equal(JSON.parse(output).hookSpecificOutput.permissionDecision, 'ask');
+  });
+
+  test('allows the scratchpad_dir from the input', () => {
+    const input = { tool_name: 'Write', tool_input: { file_path: '/var/pad/a' }, scratchpad_dir: '/var/pad' };
+    assert.equal(runHook(HOOK, input, { env }), '');
+  });
+
+  test('prints nothing, and exits 0, on malformed input', () => {
+    assert.equal(runHook(HOOK, 'not json', { env }), '');
+  });
+
+  test('ignores cwd and scratchpad_dir that are not strings', () => {
+    const input = { tool_name: 'Read', tool_input: { file_path: '/Users/me/project/a' }, cwd: 42, scratchpad_dir: [] };
+    assert.equal(runHook(HOOK, input, { env }), '');
+  });
+});

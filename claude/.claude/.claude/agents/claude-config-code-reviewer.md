@@ -14,7 +14,8 @@ First read `~/.claude/.claude/CLAUDE.md`: its conventions are the standard you j
 - Does each hook do what its header comment says, for realistic inputs? Try edge cases in your head: empty input, missing fields, odd commands, paths with `..` or `~`, non-repos.
 - Does it output what Claude Code expects for that hook event (exit code, JSON shape, plain text)?
 - Can it hang, crash or exit non-zero when it shouldn't? Network or git calls without timeouts?
-- Does it work on Node 16? Look for APIs or syntax newer than Node 16.
+- Does it follow the type-stripping and runtime rules in `.claude/CLAUDE.md`? Does it work when run the way `settings.json` runs it (through the `~/.claude` symlink, with the `node` on PATH)?
+- Do the types match reality? Hook input is untrusted JSON, so check that code handles missing or wrong fields rather than trusting the types.
 
 **Readability**
 - Could someone new understand each function quickly? Clear names, small functions, comments that explain *why*.
@@ -24,10 +25,10 @@ First read `~/.claude/.claude/CLAUDE.md`: its conventions are the standard you j
 - Is every behaviour the code promises tested, including edge cases and the end-to-end script run?
 - Would the tests fail if the code broke? Look for assertions that are too loose or tests that can't fail.
 - Are tests readable and independent (no shared state leaking between them, real temp dirs cleaned up)?
-- You may run `cd ~/.claude/hooks && node --test 'tests/*.test.mjs'`.
+- You may run `cd ~/.claude/hooks && npm test`.
 
 **Organisation**
-- Is shared logic in `hooks/lib/` rather than duplicated? Is anything in `lib/` used by only one hook for no reason?
+- Is shared logic in `hooks/src/lib/` rather than duplicated? Is anything in `lib/` used by only one hook for no reason?
 - Do file names, exports and test file names follow the conventions?
 - Is anything dead, unused or left over from an earlier version?
 

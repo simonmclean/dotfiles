@@ -21,11 +21,27 @@ import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import path from 'node:path';
 
-import { readHookInput, runIfMain } from './lib/hook-io.mjs';
-import { parseCommands, programName } from './lib/shell.mjs';
+import { readHookInput, runIfMain, stringField } from './lib/hook-io.ts';
+import { type Command, parseCommands, programName } from './lib/shell.ts';
+import type { PreToolUseInput, PreToolUseOutput } from './lib/types.ts';
+
+/** Everything the hook needs to know about where it's running. */
+export interface Context {
+  /** The folder the session started in. */
+  projectDir: string;
+  /** The folder Claude is in now. Relative paths resolve from here. */
+  cwd: string;
+  home: string;
+  /** Used to find the default scratchpad location, /tmp/claude-<uid>. */
+  uid: number | undefined;
+  /** The session's scratchpad, when Claude Code tells us. */
+  scratchpadDir: string | undefined;
+  /** `permissions.additionalDirectories` from settings, as absolute paths. */
+  additionalDirs: string[];
+}
 
 // Input fields that hold a path, per file tool.
-const PATH_FIELDS_BY_TOOL = {
+const PATH_FIELDS_BY_TOOL: Record<string, string[]> = {
   Read: ['file_path'],
   Write: ['file_path'],
   Edit: ['file_path'],
@@ -54,7 +70,7 @@ const ENV_ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
 
 const HOME_VARIABLES = ['$HOME', '${HOME}'];
 
-function looksLikePath(text) {
+function looksLikePath(text: string): boolean {
   return (
     text.startsWith('/') ||
     text.startsWith('~') ||
@@ -67,7 +83,7 @@ function looksLikePath(text) {
 }
 
 // "~/x", "$HOME/x" -> "/Users/me/x"; "~bob/x" -> "/Users/bob/x".
-function expandHome(text, home) {
+function expandHome(text: string, home: string): string {
   if (text === '~' || text.startsWith('~/')) return home + text.slice(1);
   if (text.startsWith('~')) return path.join(path.dirname(home), text.slice(1));
 
@@ -77,17 +93,17 @@ function expandHome(text, home) {
   return text;
 }
 
-function resolvePath(text, baseFolder, home) {
+function resolvePath(text: string, baseFolder: string, home: string): string {
   return path.resolve(baseFolder, expandHome(text, home));
 }
 
-function isWithin(target, folder) {
+function isWithin(target: string, folder: string): boolean {
   const relative = path.relative(folder, target);
   return relative === '' || !(relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative));
 }
 
 // ~/.claude/projects/<project>/memory/... and ~/.claude/projects/<project>/<session>/tool-results/...
-function isClaudeProjectFile(target, home) {
+function isClaudeProjectFile(target: string, home: string): boolean {
   const relative = path.relative(path.join(home, '.claude', 'projects'), target);
   if (relative === '' || relative.startsWith('..')) return false;
 
@@ -95,19 +111,19 @@ function isClaudeProjectFile(target, home) {
   return second === 'memory' || third === 'tool-results';
 }
 
-function isClaudeCodeFile(target, { home, uid, scratchpadDir }) {
+function isClaudeCodeFile(target: string, { home, uid, scratchpadDir }: Context): boolean {
   const folders = [
     scratchpadDir,
     `/tmp/claude-${uid}`, // where scratchpads live when the hook isn't told (/tmp is /private/tmp on macOS)
     `/private/tmp/claude-${uid}`,
     path.join(home, '.claude', 'plans'),
     path.join(home, '.claude', 'plugins'),
-  ].filter(Boolean);
+  ].filter((folder): folder is string => folder !== undefined);
 
   return folders.some((folder) => isWithin(target, folder)) || isClaudeProjectFile(target, home);
 }
 
-function isAllowed(target, context) {
+function isAllowed(target: string, context: Context): boolean {
   const insideFolders = [context.projectDir, context.cwd, ...context.additionalDirs];
   return (
     insideFolders.some((folder) => isWithin(target, folder)) ||
@@ -119,14 +135,14 @@ function isAllowed(target, context) {
 // --- Finding the paths a Bash command touches ---
 
 // "--config=/etc/x" -> "/etc/x"; "@/etc/passwd" (curl's read-from-file) -> "/etc/passwd".
-function argumentValue(argument) {
+function argumentValue(argument: string): string {
   const value = argument.startsWith('-') && argument.includes('=') ? argument.slice(argument.indexOf('=') + 1) : argument;
   return value.startsWith('@') ? value.slice(1) : value;
 }
 
 // Positions in `args` that hold code or a pattern rather than a file.
-function codeArgumentPositions(program, args) {
-  const positions = new Set();
+function codeArgumentPositions(program: string, args: string[]): Set<number> {
+  const positions = new Set<number>();
 
   args.forEach((arg, i) => {
     if (CODE_OPTIONS.includes(arg)) positions.add(i + 1);
@@ -141,13 +157,13 @@ function codeArgumentPositions(program, args) {
 }
 
 // The path-like words in one command, still unresolved.
-function pathsInCommand(words) {
-  const paths = [];
+function pathsInCommand(words: Command): string[] {
+  const paths: string[] = [];
   let i = 0;
 
-  while (i < words.length && ENV_ASSIGNMENT.test(words[i])) {
-    paths.push(words[i].slice(words[i].indexOf('=') + 1));
-    i++;
+  for (; i < words.length && ENV_ASSIGNMENT.test(words[i] ?? ''); i++) {
+    const assignment = words[i] ?? '';
+    paths.push(assignment.slice(assignment.indexOf('=') + 1));
   }
 
   const program = words[i];
@@ -170,40 +186,40 @@ function pathsInCommand(words) {
 
 // Every absolute path a command line touches. Follows `cd` so that later
 // relative paths resolve from the right folder: `cd .. && cat x`.
-function pathsInBashCommand(commandLine, { cwd, home }) {
-  const paths = [];
+function pathsInBashCommand(commandLine: string, { cwd, home }: Context): string[] {
+  const paths: string[] = [];
   let folder = cwd;
 
   for (const words of parseCommands(commandLine)) {
     paths.push(...pathsInCommand(words).map((text) => resolvePath(text, folder, home)));
 
-    if (programName(words[0]) === 'cd') folder = resolvePath(words[1] ?? '~', folder, home);
+    if (programName(words[0] ?? '') === 'cd') folder = resolvePath(words[1] ?? '~', folder, home);
   }
   return paths;
 }
 
-function pathsInToolCall(toolName, toolInput, context) {
-  if (toolName === 'Bash') return pathsInBashCommand(toolInput.command ?? '', context);
+function pathsInToolCall(toolName: string, toolInput: Record<string, unknown>, context: Context): string[] {
+  if (toolName === 'Bash') return pathsInBashCommand(stringField(toolInput, 'command') ?? '', context);
 
   const fields = PATH_FIELDS_BY_TOOL[toolName] ?? [];
   return fields
-    .map((field) => toolInput[field])
-    .filter((value) => typeof value === 'string' && looksLikePath(value))
+    .map((field) => stringField(toolInput, field))
+    .filter((value): value is string => value !== undefined && looksLikePath(value))
     .map((value) => resolvePath(value, context.cwd, context.home));
 }
 
 // --- The hook ---
 
 // Return the absolute paths outside the project that this tool call would touch.
-export function findOutsidePaths(hookInput, context) {
-  const toolName = hookInput?.tool_name;
+export function findOutsidePaths(hookInput: PreToolUseInput | undefined, context: Context): string[] {
+  const toolName = hookInput?.tool_name ?? '';
   const toolInput = hookInput?.tool_input ?? {};
 
   const outside = pathsInToolCall(toolName, toolInput, context).filter((target) => !isAllowed(target, context));
   return [...new Set(outside)];
 }
 
-export function decide(hookInput, context) {
+export function decide(hookInput: PreToolUseInput | undefined, context: Context): PreToolUseOutput | null {
   const outsidePaths = findOutsidePaths(hookInput, context);
   if (outsidePaths.length === 0) return null;
 
@@ -217,7 +233,7 @@ export function decide(hookInput, context) {
 }
 
 // `permissions.additionalDirectories` from the user and project settings files.
-export function readAdditionalDirectories(projectDir, home) {
+export function readAdditionalDirectories(projectDir: string, home: string): string[] {
   const settingsFiles = [
     path.join(home, '.claude', 'settings.json'),
     path.join(projectDir, '.claude', 'settings.json'),
@@ -226,25 +242,30 @@ export function readAdditionalDirectories(projectDir, home) {
 
   return settingsFiles.flatMap((file) => {
     try {
-      const folders = JSON.parse(readFileSync(file, 'utf8'))?.permissions?.additionalDirectories;
-      return Array.isArray(folders) ? folders.map((folder) => resolvePath(folder, projectDir, home)) : [];
+      const folders: unknown = JSON.parse(readFileSync(file, 'utf8'))?.permissions?.additionalDirectories;
+      if (!Array.isArray(folders)) return [];
+
+      return folders
+        .filter((folder): folder is string => typeof folder === 'string')
+        .map((folder) => resolvePath(folder, projectDir, home));
     } catch {
       return []; // missing or unreadable settings file
     }
   });
 }
 
-function main() {
-  const hookInput = readHookInput();
+function main(): void {
+  const hookInput = readHookInput<PreToolUseInput>();
   const home = homedir();
-  const projectDir = process.env.CLAUDE_PROJECT_DIR || hookInput.cwd || process.cwd();
+  const cwd = stringField(hookInput, 'cwd');
+  const projectDir = process.env.CLAUDE_PROJECT_DIR || cwd || process.cwd();
 
-  const context = {
+  const context: Context = {
     projectDir,
-    cwd: hookInput.cwd || projectDir,
+    cwd: cwd || projectDir,
     home,
-    uid: process.getuid(),
-    scratchpadDir: hookInput.scratchpad_dir,
+    uid: process.getuid?.(),
+    scratchpadDir: stringField(hookInput, 'scratchpad_dir'),
     additionalDirs: readAdditionalDirectories(projectDir, home),
   };
 
