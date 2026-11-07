@@ -1,21 +1,28 @@
 #!/usr/bin/env node
 // PreToolUse hook: ask for approval before Claude reads or writes outside the project.
 //
-// "The project" is the folder the session started in (CLAUDE_PROJECT_DIR).
+// "Inside" means any of:
+//   - the folder the session started in (CLAUDE_PROJECT_DIR)
+//   - the current folder, which differs after /cd or in a worktree
+//   - folders listed in `permissions.additionalDirectories` in settings
+// Folders added with /add-dir during a session aren't visible to hooks, so
+// those still prompt.
 //
-// File tools (Read, Edit, Write, Glob, Grep, ...) give us the exact path.
-// For Bash we can only guess: any argument that looks like a path outside the
-// project (/abs/path, ~/x, $HOME/x, ../x) counts as an access. A wrong guess
-// only costs an extra prompt. A command can still reach outside in ways we
-// can't see (other variables, scripts it runs), so this is a guard rail,
-// not a sandbox.
+// Claude Code's own working files (scratchpad, memory, saved tool output,
+// plans, plugins) are always allowed.
+//
+// File tools (Read, Edit, Write, Glob, Grep, LSP, ...) give us the exact path.
+// For Bash we can only guess: any argument that looks like a path outside
+// (/abs/path, ~/x, $HOME/x, ../x) counts as an access. A command can still
+// reach outside in ways we can't see (other variables, scripts it runs), so
+// this is a guard rail, not a sandbox.
 
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 
-import { splitIntoCommands, words } from './lib/shell.mjs';
+import { readHookInput, runIfMain } from './lib/hook-io.mjs';
+import { parseCommands, programName } from './lib/shell.mjs';
 
 // Input fields that hold a path, per file tool.
 const PATH_FIELDS_BY_TOOL = {
@@ -26,7 +33,22 @@ const PATH_FIELDS_BY_TOOL = {
   NotebookEdit: ['notebook_path'],
   Glob: ['path', 'pattern'],
   Grep: ['path'],
+  // The LSP tool's input isn't documented, so check each likely name for its file.
+  LSP: ['filePath', 'file_path', 'path'],
 };
+
+// Device files that are safe to use from anywhere.
+const DEVICE_FILES = ['/dev/null', '/dev/stdin', '/dev/stdout', '/dev/stderr', '/dev/tty', '/dev/fd'];
+
+// Tools whose first plain argument is a program or pattern, not a file:
+// `sed -n '/start/,/end/p' file`, `awk '/x/ {print}' file`.
+const TOOLS_WITH_PROGRAM_ARGUMENT = ['jq', 'sed', 'awk', 'gawk', 'grep', 'egrep', 'fgrep', 'rg'];
+
+// Options whose value is code or a pattern, not a file: `sed -e`, `grep -e`, `node -e`, `python -c`.
+const CODE_OPTIONS = ['-e', '--expression', '--regexp', '--eval', '-c'];
+
+// `NAME=value` at the start of a command, e.g. `FOO=/etc/x make`.
+const ENV_ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
 
 // --- Recognising and resolving paths ---
 
@@ -55,71 +77,129 @@ function expandHome(text, home) {
   return text;
 }
 
+function resolvePath(text, baseFolder, home) {
+  return path.resolve(baseFolder, expandHome(text, home));
+}
+
 function isWithin(target, folder) {
   const relative = path.relative(folder, target);
   return relative === '' || !(relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative));
 }
 
-// Claude Code's own memory folders: ~/.claude/projects/<project>/memory/...
-function isClaudeMemoryPath(target, home) {
+// ~/.claude/projects/<project>/memory/... and ~/.claude/projects/<project>/<session>/tool-results/...
+function isClaudeProjectFile(target, home) {
   const relative = path.relative(path.join(home, '.claude', 'projects'), target);
-  const [project, folder] = relative.split(path.sep);
-  return project !== '..' && folder === 'memory';
+  if (relative === '' || relative.startsWith('..')) return false;
+
+  const [, second, third] = relative.split(path.sep);
+  return second === 'memory' || third === 'tool-results';
 }
 
-// Places Claude may use without asking, besides the project itself.
-function isAlwaysAllowed(target, { home, uid }) {
-  const allowedFolders = [
-    '/dev/null',
-    `/tmp/claude-${uid}`, // Claude Code's scratchpad (/tmp is /private/tmp on macOS)
+function isClaudeCodeFile(target, { home, uid, scratchpadDir }) {
+  const folders = [
+    scratchpadDir,
+    `/tmp/claude-${uid}`, // where scratchpads live when the hook isn't told (/tmp is /private/tmp on macOS)
     `/private/tmp/claude-${uid}`,
-  ];
-  return allowedFolders.some((folder) => isWithin(target, folder)) || isClaudeMemoryPath(target, home);
+    path.join(home, '.claude', 'plans'),
+    path.join(home, '.claude', 'plugins'),
+  ].filter(Boolean);
+
+  return folders.some((folder) => isWithin(target, folder)) || isClaudeProjectFile(target, home);
 }
 
-// --- Finding the paths a tool call touches ---
-
-// "--config=/etc/x" -> ["--config", "/etc/x"]; "2>/dev/null" -> ["2", "/dev/null"]; '"~/x"' -> ["~/x"].
-function argumentParts(argument) {
-  const unquoted = argument.replace(/^['"]|['"]$/g, '');
-  return unquoted.split(/[<>=]/);
+function isAllowed(target, context) {
+  const insideFolders = [context.projectDir, context.cwd, ...context.additionalDirs];
+  return (
+    insideFolders.some((folder) => isWithin(target, folder)) ||
+    DEVICE_FILES.some((device) => isWithin(target, device)) ||
+    isClaudeCodeFile(target, context)
+  );
 }
 
-function pathsInBashCommand(commandLine, home) {
+// --- Finding the paths a Bash command touches ---
+
+// "--config=/etc/x" -> "/etc/x"; "@/etc/passwd" (curl's read-from-file) -> "/etc/passwd".
+function argumentValue(argument) {
+  const value = argument.startsWith('-') && argument.includes('=') ? argument.slice(argument.indexOf('=') + 1) : argument;
+  return value.startsWith('@') ? value.slice(1) : value;
+}
+
+// Positions in `args` that hold code or a pattern rather than a file.
+function codeArgumentPositions(program, args) {
+  const positions = new Set();
+
+  args.forEach((arg, i) => {
+    if (CODE_OPTIONS.includes(arg)) positions.add(i + 1);
+  });
+
+  // With no -e, tools like sed and awk take their program as the first plain argument.
+  if (positions.size === 0 && TOOLS_WITH_PROGRAM_ARGUMENT.includes(programName(program))) {
+    const firstPlain = args.findIndex((arg) => !arg.startsWith('-'));
+    if (firstPlain !== -1) positions.add(firstPlain);
+  }
+  return positions;
+}
+
+// The path-like words in one command, still unresolved.
+function pathsInCommand(words) {
   const paths = [];
+  let i = 0;
 
-  for (const command of splitIntoCommands(commandLine)) {
-    // The first word is the program being run, which isn't a read of that file.
-    const [program, ...args] = words(command);
+  while (i < words.length && ENV_ASSIGNMENT.test(words[i])) {
+    paths.push(words[i].slice(words[i].indexOf('=') + 1));
+    i++;
+  }
 
-    if (program === 'cd' && args.length === 0) paths.push(home); // bare `cd` goes home
+  const program = words[i];
+  if (program === undefined) return paths;
+  const args = words.slice(i + 1);
 
-    for (const part of args.flatMap(argumentParts)) {
-      if (looksLikePath(part)) paths.push(part);
-    }
+  // Running a script from outside (`~/bin/run.sh`, `../tool`) counts. Absolute
+  // programs (`/usr/bin/git`) are almost always system binaries, so they don't.
+  if (!program.startsWith('/')) paths.push(program);
+
+  if (programName(program) === 'cd' && args.length === 0) paths.push('~'); // bare `cd` goes home
+
+  const codePositions = codeArgumentPositions(program, args);
+  args.forEach((arg, position) => {
+    if (!codePositions.has(position)) paths.push(argumentValue(arg));
+  });
+
+  return paths.filter(looksLikePath);
+}
+
+// Every absolute path a command line touches. Follows `cd` so that later
+// relative paths resolve from the right folder: `cd .. && cat x`.
+function pathsInBashCommand(commandLine, { cwd, home }) {
+  const paths = [];
+  let folder = cwd;
+
+  for (const words of parseCommands(commandLine)) {
+    paths.push(...pathsInCommand(words).map((text) => resolvePath(text, folder, home)));
+
+    if (programName(words[0]) === 'cd') folder = resolvePath(words[1] ?? '~', folder, home);
   }
   return paths;
 }
 
-function pathsInToolCall(toolName, toolInput, home) {
-  if (toolName === 'Bash') return pathsInBashCommand(toolInput.command ?? '', home);
+function pathsInToolCall(toolName, toolInput, context) {
+  if (toolName === 'Bash') return pathsInBashCommand(toolInput.command ?? '', context);
 
   const fields = PATH_FIELDS_BY_TOOL[toolName] ?? [];
-  return fields.map((field) => toolInput[field]).filter((value) => typeof value === 'string' && looksLikePath(value));
+  return fields
+    .map((field) => toolInput[field])
+    .filter((value) => typeof value === 'string' && looksLikePath(value))
+    .map((value) => resolvePath(value, context.cwd, context.home));
 }
 
 // --- The hook ---
 
 // Return the absolute paths outside the project that this tool call would touch.
 export function findOutsidePaths(hookInput, context) {
-  const { projectDir, home } = context;
   const toolName = hookInput?.tool_name;
   const toolInput = hookInput?.tool_input ?? {};
 
-  const outside = pathsInToolCall(toolName, toolInput, home)
-    .map((text) => path.resolve(projectDir, expandHome(text, home)))
-    .filter((target) => !isWithin(target, projectDir) && !isAlwaysAllowed(target, context));
-
+  const outside = pathsInToolCall(toolName, toolInput, context).filter((target) => !isAllowed(target, context));
   return [...new Set(outside)];
 }
 
@@ -136,15 +216,40 @@ export function decide(hookInput, context) {
   };
 }
 
+// `permissions.additionalDirectories` from the user and project settings files.
+export function readAdditionalDirectories(projectDir, home) {
+  const settingsFiles = [
+    path.join(home, '.claude', 'settings.json'),
+    path.join(projectDir, '.claude', 'settings.json'),
+    path.join(projectDir, '.claude', 'settings.local.json'),
+  ];
+
+  return settingsFiles.flatMap((file) => {
+    try {
+      const folders = JSON.parse(readFileSync(file, 'utf8'))?.permissions?.additionalDirectories;
+      return Array.isArray(folders) ? folders.map((folder) => resolvePath(folder, projectDir, home)) : [];
+    } catch {
+      return []; // missing or unreadable settings file
+    }
+  });
+}
+
 function main() {
-  const hookInput = JSON.parse(readFileSync(0, 'utf8') || '{}');
+  const hookInput = readHookInput();
+  const home = homedir();
+  const projectDir = process.env.CLAUDE_PROJECT_DIR || hookInput.cwd || process.cwd();
+
   const context = {
-    projectDir: process.env.CLAUDE_PROJECT_DIR || hookInput.cwd || process.cwd(),
-    home: homedir(),
+    projectDir,
+    cwd: hookInput.cwd || projectDir,
+    home,
     uid: process.getuid(),
+    scratchpadDir: hookInput.scratchpad_dir,
+    additionalDirs: readAdditionalDirectories(projectDir, home),
   };
+
   const decision = decide(hookInput, context);
   if (decision) console.log(JSON.stringify(decision));
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) main();
+runIfMain(import.meta.url, main);

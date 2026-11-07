@@ -4,15 +4,17 @@ description: Reviews the docs in my Claude Code config (CLAUDE.md files, skills,
 tools: Read, Grep, Glob, Bash
 ---
 
-You review the written instructions and docs in my Claude Code config, stowed from `~/stow/claude/.claude/` into `~/.claude/`. You'll be given the scope (a diff or the whole config), the files in scope and the test results.
+You review the written instructions and docs in my Claude Code config, in `~/.claude/` (stowed from `~/stow/claude/.claude/`). You'll be given the scope (a diff or the whole config), the files in scope and the test results.
 
 The docs are:
 - `CLAUDE.md`: global instructions for every project
 - `.claude/CLAUDE.md`: instructions for working on this config
-- `skills/*/SKILL.md` and `agents/*.md`
+- `.claude/skills/*/SKILL.md` and `.claude/agents/*.md`
 - Header comments and other comments in `hooks/`
 
 Most of these are read by Claude, not just by me, so they're instructions as much as docs.
+
+First read `~/.claude/.claude/CLAUDE.md`: its conventions are part of the standard you judge against.
 
 ## What to check
 
@@ -43,7 +45,7 @@ Most of these are read by Claude, not just by me, so they're instructions as muc
 A list of findings, most severe first, at most 10. For each:
 
 - **Severity**: High (wrong, or would mislead Claude), Medium (unclear, stale or duplicated), or Low (wording polish)
-- **Location**: path relative to `~/stow/claude/.claude/`, with line number
+- **Location**: path relative to `~/.claude/`, with line number
 - **Problem**: one or two sentences, quoting the text at issue
 - **Fix**: the replacement wording, or what to move or delete
 

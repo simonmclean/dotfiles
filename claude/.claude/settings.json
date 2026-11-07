@@ -3,7 +3,9 @@
   "permissions": {
     "ask": [
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr merge:*)"
     ]
   },
   "hooks": {
@@ -13,12 +15,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/hooks/confirm-git-commit-push.mjs"
+            "command": "node ~/.claude/hooks/confirm-commit-push-pr.mjs",
+            "onFailure": "block"
           }
         ]
       },
       {
-        "matcher": "Bash|Read|Write|Edit|MultiEdit|NotebookEdit|Glob|Grep",
+        "matcher": "Bash|Read|Write|Edit|MultiEdit|NotebookEdit|Glob|Grep|LSP",
         "hooks": [
           {
             "type": "command",
@@ -29,6 +32,7 @@
     ],
     "SessionStart": [
       {
+        "matcher": "startup|clear",
         "hooks": [
           {
             "type": "command",

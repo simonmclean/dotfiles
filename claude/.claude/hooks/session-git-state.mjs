@@ -3,15 +3,19 @@
 //
 // Whatever this prints is added to Claude's context at the start of the
 // session. It supports two CLAUDE.md rules:
-//   - start new work from the latest main (so we report how far behind we are)
-//   - ask about existing uncommitted changes (so we list them)
+//   - start new work from the latest default branch (so we report how far behind we are)
+//   - ask about existing unrelated changes (so we list them)
+//
+// settings.json runs it only on "startup" and "clear": after a resume or
+// compaction, uncommitted changes are usually Claude's own work in progress.
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
+
+import { readHookInput, runIfMain } from './lib/hook-io.mjs';
 
 const MAX_LISTED_CHANGES = 20;
 const FETCH_TIMEOUT_MS = 10_000;
+const LOCAL_GIT_TIMEOUT_MS = 3_000;
 
 // Never let git wait for a password or an SSH prompt: a hook must not hang.
 const NON_INTERACTIVE_GIT_ENV = {
@@ -20,8 +24,8 @@ const NON_INTERACTIVE_GIT_ENV = {
   GIT_SSH_COMMAND: 'ssh -o BatchMode=yes -o ConnectTimeout=5',
 };
 
-// Run git in `cwd` and return its trimmed output, or null if it fails.
-function git(cwd, args, { timeout } = {}) {
+// Run git in `cwd` and return its trimmed output, or null if it fails or times out.
+function git(cwd, args, { timeout = LOCAL_GIT_TIMEOUT_MS } = {}) {
   try {
     const output = execFileSync('git', args, {
       cwd,
@@ -45,8 +49,16 @@ function findDefaultRemoteBranch(cwd) {
   return hasOriginMain ? 'origin/main' : null;
 }
 
+// Number of commits in `range`, or null if git can't tell us.
 function countCommits(cwd, range) {
-  return Number(git(cwd, ['rev-list', '--count', range]));
+  const output = git(cwd, ['rev-list', '--count', range]);
+  return output === null ? null : Number(output);
+}
+
+function compareWithBase(cwd, base) {
+  const behind = countCommits(cwd, `HEAD..${base}`);
+  const ahead = countCommits(cwd, `${base}..HEAD`);
+  return behind === null || ahead === null ? null : { base, behind, ahead };
 }
 
 // Collect the git state of `cwd`, or return null if it isn't inside a git repo.
@@ -57,7 +69,7 @@ export function getGitState(cwd) {
     branch: git(cwd, ['branch', '--show-current']) || null, // empty when HEAD is detached
     fetchFailed: false,
     comparison: null,
-    changes: [],
+    changes: [], // null when git status fails
   };
 
   const hasOrigin = git(cwd, ['remote', 'get-url', 'origin']) !== null;
@@ -65,19 +77,24 @@ export function getGitState(cwd) {
     state.fetchFailed = git(cwd, ['fetch', '--quiet', 'origin'], { timeout: FETCH_TIMEOUT_MS }) === null;
 
     const base = findDefaultRemoteBranch(cwd);
-    if (base) {
-      state.comparison = {
-        base,
-        behind: countCommits(cwd, `HEAD..${base}`),
-        ahead: countCommits(cwd, `${base}..HEAD`),
-      };
-    }
+    if (base) state.comparison = compareWithBase(cwd, base);
   }
 
   const status = git(cwd, ['status', '--short']);
-  state.changes = status ? status.split('\n') : [];
+  state.changes = status === null ? null : status.split('\n').filter(Boolean);
 
   return state;
+}
+
+function describeChanges(changes) {
+  if (changes === null) return ['- (git status failed; uncommitted changes unknown)'];
+  if (changes.length === 0) return ['- Working tree clean'];
+
+  return [
+    `- Uncommitted changes (${changes.length} files):`,
+    ...changes.slice(0, MAX_LISTED_CHANGES).map((change) => `    ${change}`),
+    'If starting new work and these changes are unrelated to it, follow the CLAUDE.md rule about existing changes.',
+  ];
 }
 
 // Turn the state into the short report Claude sees.
@@ -95,25 +112,15 @@ export function formatReport(state) {
     lines.push(`- vs ${base}: ${behind} behind, ${ahead} ahead`);
   }
 
-  if (state.changes.length === 0) {
-    lines.push('- Working tree clean');
-  } else {
-    lines.push(`- Uncommitted changes (${state.changes.length} files):`);
-    for (const change of state.changes.slice(0, MAX_LISTED_CHANGES)) {
-      lines.push(`    ${change}`);
-    }
-    lines.push(
-      'If starting new work, follow the CLAUDE.md rule: ask whether to discard, use a new worktree, or continue.',
-    );
-  }
+  lines.push(...describeChanges(state.changes));
 
   return lines.join('\n');
 }
 
 function main() {
-  const hookInput = JSON.parse(readFileSync(0, 'utf8') || '{}');
+  const hookInput = readHookInput();
   const state = getGitState(hookInput.cwd || process.cwd());
   if (state) console.log(formatReport(state));
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) main();
+runIfMain(import.meta.url, main);

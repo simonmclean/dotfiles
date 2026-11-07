@@ -4,11 +4,11 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { formatReport, getGitState } from '../session-git-state.mjs';
+import { NODE_BINARIES, runHook } from './helpers.mjs';
 
-const HOOK = fileURLToPath(new URL('../session-git-state.mjs', import.meta.url));
+const HOOK = 'session-git-state.mjs';
 
 // Isolate git from the user's own config so tests behave the same everywhere.
 Object.assign(process.env, {
@@ -51,7 +51,13 @@ describe('formatReport', () => {
     assert.match(report, /Uncommitted changes \(2 files\):/);
     assert.match(report, /^ {4}\?\? a\.txt$/m);
     assert.match(report, /^ {4} M b\.txt$/m);
-    assert.match(report, /ask whether to discard, use a new worktree, or continue/);
+    assert.match(report, /If starting new work and these changes are unrelated to it, follow the CLAUDE\.md rule/);
+    assert.doesNotMatch(report, /Working tree clean/);
+  });
+
+  test('says so when git status failed', () => {
+    const report = formatReport({ ...cleanState, changes: null });
+    assert.match(report, /git status failed; uncommitted changes unknown/);
     assert.doesNotMatch(report, /Working tree clean/);
   });
 
@@ -143,14 +149,27 @@ describe('getGitState', () => {
     assert.equal(getGitState(repo).branch, null);
   });
 
-  test('as a script: prints the report for the cwd it is given', () => {
-    const repo = setUpLocalRepo('script');
-    const output = execFileSync('node', [HOOK], { input: JSON.stringify({ cwd: repo }), encoding: 'utf8' });
-    assert.match(output, /^Git state at session start:\n- Current branch: main\n- Working tree clean\n$/);
+  test('a failing remote-branch comparison is left out, not shown as up to date', () => {
+    const { work } = setUpClonedRepo('unborn');
+    git(work, 'checkout', '-q', '--orphan', 'empty'); // HEAD has no commits, so rev-list fails
+    assert.equal(getGitState(work).comparison, null);
   });
 
-  test('as a script: prints nothing outside a repo', () => {
-    const output = execFileSync('node', [HOOK], { input: JSON.stringify({ cwd: tmpdir() }), encoding: 'utf8' });
-    assert.equal(output, '');
-  });
+  for (const node of NODE_BINARIES) {
+    describe(`as a script (${node})`, () => {
+      test('prints the report for the cwd it is given', () => {
+        const repo = setUpLocalRepo(`script-${NODE_BINARIES.indexOf(node)}`);
+        const output = runHook(HOOK, { cwd: repo, source: 'startup' }, { node });
+        assert.match(output, /^Git state at session start:\n- Current branch: main\n- Working tree clean\n$/);
+      });
+
+      test('prints nothing outside a repo', () => {
+        assert.equal(runHook(HOOK, { cwd: tmpdir() }, { node }), '');
+      });
+
+      test('exits 0 on malformed input', () => {
+        runHook(HOOK, 'not json', { node }); // throws if the exit code is non-zero
+      });
+    });
+  }
 });
