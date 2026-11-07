@@ -68,6 +68,8 @@ source $ITEM_DIR/front_app.sh
 source $ITEM_DIR/media.sh
 
 # -- Right Side Items --
+sketchybar --default label.font="$SYSTEM_FONT:$SYSTEM_STATUS_WEIGHT:13.0"
+
 source $ITEM_DIR/calendar.sh
 source $ITEM_DIR/volume.sh
 source $ITEM_DIR/battery.sh

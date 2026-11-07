@@ -11,8 +11,8 @@ if [ "$1" = "$FOCUSED_WORKSPACE" ]; then
   SPACE+=(
     background.drawing=on
     background.color=$ACCENT_COLOR
-    label.color=$BAR_COLOR
-    icon.color=$BAR_COLOR
+    label.color=$ON_ACCENT_COLOR
+    icon.color=$ON_ACCENT_COLOR
   )
 elif [[ "$FOCUSED_MONITOR_WORKSPACES" == *"$1"* ]]; then
   # workspaces in the focused monitor
