@@ -7,6 +7,7 @@ This folder is my Claude Code configuration, not a normal project. Instructions 
 - `CLAUDE.md`: global instructions. Only edit it when I ask.
 - `settings.json`: global settings, permissions and hooks. Keep it valid JSON (`jq . settings.json`) and don't remove existing entries without asking.
 - `hooks/`: hook scripts registered in `settings.json`.
+- `skills/` and `agents/`: my global skills and subagents. `/review-claude-config` reviews this config.
 
 Everything else (`projects/`, `sessions/`, `cache/`, `file-history/`, `telemetry/`, etc.) is managed by Claude Code. Don't edit or delete it unless I ask.
 
